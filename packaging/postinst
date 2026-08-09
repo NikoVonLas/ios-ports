@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+
+ldid -S/var/jb/usr/share/codex-ios/entitlements.plist /var/jb/usr/bin/codex
+chmod 0755 /var/jb/usr/bin/codex
+

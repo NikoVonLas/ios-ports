@@ -8,7 +8,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 assert.equal(process.arch, 'arm64');
-assert.equal(process.platform, 'darwin');
+assert.equal(process.platform, 'ios');
 assert.equal(crypto.createHash('sha256').update('ios').digest('hex').length, 64);
 
 const temporaryFile = path.join(os.tmpdir(), `node-ios24-${process.pid}.txt`);

@@ -53,16 +53,16 @@ extracted.
 Copy the package to the device and install it:
 
 ```sh
-sudo dpkg -i nodejs_24.18.1-1_iphoneos-arm64.deb
+sudo dpkg -i nodejs_24.18.1-2_iphoneos-arm64.deb
 node --version
 npm --version
 node /var/jb/usr/share/nodejs-ios24/smoke.js
 ```
 
-The installed `node` command is a small wrapper that selects the conservative
-V8 flags proven by the existing Node 18 iOS package while retaining Liftoff
-WebAssembly support. Set `NODE_IOS_JITLESS=1` to disable JIT and WebAssembly
-entirely while diagnosing code-signing failures.
+The installed `node` command is a small wrapper that runs V8 with `--jitless`.
+This avoids a `SIGBUS` when V8 tries to allocate executable memory on Dopamine,
+including during npm startup. Set `NODE_IOS_ALLOW_JIT=1` only for testing on a
+device and jailbreak that provide working JIT memory mappings.
 
 ## Important limitation
 

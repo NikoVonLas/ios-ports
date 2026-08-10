@@ -15,7 +15,7 @@ Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/codex
 
 Package: nodejs-ios24
 Name: Node.js 24 LTS
-Version: 24.18.1-1
+Version: 24.18.1-2
 Architecture: iphoneos-arm64
 Maintainer: NikoVonLas
 Section: Development
@@ -24,9 +24,9 @@ Depends: firmware (>= 15.0), zsh
 Conflicts: nodejs, nodejs-ios
 Provides: nodejs, npm
 Tag: purpose::console, role::developer
-Filename: debs/nodejs_24.18.1-1_iphoneos-arm64.deb
-Size: 37982160
-SHA256: 228a451c15a5db78dd78602d7a55fe5cd75e390007a8ad59b98140b18224f9db
+Filename: debs/nodejs_24.18.1-2_iphoneos-arm64.deb
+Size: 37982478
+SHA256: 8059c80d12bd87927b0a4921e338ef13fddb339a55849e292fe012461d494166
 Description: Node.js 24 LTS and npm for rootless jailbroken iOS
  Native arm64 Node.js runtime packaged below /var/jb for iOS 15 and later.
 Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/nodejs

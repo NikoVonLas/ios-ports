@@ -3,7 +3,9 @@ set -euo pipefail
 source "$(dirname "$0")/common.sh"
 
 binary="$TARGET_DIR/$IOS_TARGET/release/codex"
+code_mode_host="$TARGET_DIR/$IOS_TARGET/release/codex-code-mode-host"
 [[ -x "$binary" ]] || die "missing binary; run make build first"
+[[ -x "$code_mode_host" ]] || die "missing Code Mode host; run make build first"
 
 rm -rf "$STAGE_DIR"
 mkdir -p \
@@ -12,6 +14,7 @@ mkdir -p \
   "$STAGE_DIR/DEBIAN" \
   "$DIST_DIR"
 install -m 0755 "$binary" "$STAGE_DIR/var/jb/usr/bin/codex"
+install -m 0755 "$code_mode_host" "$STAGE_DIR/var/jb/usr/bin/codex-code-mode-host"
 install -m 0644 \
   "$PROJECT_ROOT/packaging/entitlements.plist" \
   "$STAGE_DIR/var/jb/usr/share/codex-ios/entitlements.plist"

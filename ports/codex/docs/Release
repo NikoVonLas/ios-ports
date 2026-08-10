@@ -7,5 +7,5 @@ Architectures: iphoneos-arm64
 Components: main
 Description: Experimental Codex CLI packages for rootless iPadOS
 SHA256:
- ba94ec69d6b88e4d403f2fd31b6986e3c1495a81b09d3fb8abf0ed52d96fe521              566 Packages
- 98073f44a82770281c4a37838ac02a07c2c0fe7c04a7e85313707d2111138602              404 Packages.gz
+ 8df791c415c4c08ab1fdade23d89f736462ba17c519cffa38c110316749f98b2              588 Packages
+ 194ca1773a76181ee9477e6cacf2700327fa699748eedb08c58cc5d6ab54d068              417 Packages.gz

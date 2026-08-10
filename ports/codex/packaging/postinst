@@ -2,5 +2,6 @@
 set -e
 
 ldid -S/var/jb/usr/share/codex-ios/entitlements.plist /var/jb/usr/bin/codex
+ldid -S/var/jb/usr/share/codex-ios/entitlements.plist /var/jb/usr/bin/codex-code-mode-host
 chmod 0755 /var/jb/usr/bin/codex
-
+chmod 0755 /var/jb/usr/bin/codex-code-mode-host

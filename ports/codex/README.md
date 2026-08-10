@@ -16,6 +16,8 @@ runtime.
 
 - Repository, pinned upstream fetch, iOS cross-build, signing, rootless Debian
   packaging, USB device diagnostics, install helper, and static tests exist.
+- The package includes both `codex` and the separate V8-based
+  `codex-code-mode-host` helper required by Code Mode.
 - The connected iPad is visible through usbmuxd and reports `arm64`, iPadOS
   17.7.11, and rootless package architecture `iphoneos-arm64`.
 - A complete Xcode install is still required on the Mac. Command Line Tools do
@@ -73,7 +75,7 @@ The generated `docs/` directory contains `Packages`, `Release`, and the `.deb`.
 After pushing `main`, GitHub Pages publishes it at:
 
 ```text
-https://nikovonlas.github.io/codex-ios/
+https://nikovonlas.github.io/ios-ports/
 ```
 
 Add that URL as a Sileo source.
@@ -113,6 +115,13 @@ Run it as `mobile` where practical; use `root` only for package installation.
 
 ## Updating upstream
 
-Change `CODEX_REVISION` in `config.env`, run `make clean all`, then perform the
-device smoke test. Do not move the pin until cross-build and device execution
-both pass.
+The monorepo checks the latest stable `openai/codex` release hourly. When its
+`rust-vX.Y.Z` tag differs from `CODEX_LAST_RELEASE`, GitHub Actions resolves the
+tag to an immutable commit, resets the Debian package revision to `1`, builds
+both executables on GitHub-hosted Apple Silicon runners, verifies the package,
+and publishes the updated Sileo repository. The expensive jitless V8 build is
+cached as a versioned release asset and is rebuilt only when rust-v8 changes.
+Failed upstream ports are never committed or deployed.
+
+For a manual pin, run `scripts/update-upstream.py TAG COMMIT`, then build and
+perform the device smoke test before pushing.

@@ -8,4 +8,4 @@ Author: OpenAI (upstream), NikoVonLas (iPadOS port)
 Section: Development
 Priority: optional
 Depends: firmware (>= 15.0), bash, ca-certificates, git, ldid, openssh-client, ripgrep
-Homepage: https://github.com/NikoVonLas/codex-ios
+Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/codex

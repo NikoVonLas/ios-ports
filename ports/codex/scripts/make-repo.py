@@ -13,8 +13,24 @@ import shutil
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 REPO = ROOT / "docs"
-VERSION = "0.1.0-1"
-ARCH = "iphoneos-arm64"
+
+
+def read_config() -> dict[str, str]:
+    values: dict[str, str] = {}
+    for raw_line in (ROOT / "config.env").read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        key, separator, value = line.partition("=")
+        if not separator:
+            raise SystemExit(f"invalid config.env line: {raw_line}")
+        values[key] = value
+    return values
+
+
+CONFIG = read_config()
+VERSION = f"{CONFIG['PACKAGE_VERSION']}-{CONFIG['PACKAGE_REVISION']}"
+ARCH = CONFIG["PACKAGE_ARCH"]
 DEB_NAME = f"codex-ios_{VERSION}_{ARCH}.deb"
 
 
@@ -34,6 +50,9 @@ def main() -> None:
     pool = REPO / "debs"
     pool.mkdir(parents=True, exist_ok=True)
     target_deb = pool / DEB_NAME
+    for stale_deb in pool.glob(f"codex-ios_*_{ARCH}.deb"):
+        if stale_deb != target_deb:
+            stale_deb.unlink()
     shutil.copy2(source_deb, target_deb)
 
     relative_deb = target_deb.relative_to(REPO).as_posix()
@@ -52,7 +71,7 @@ def main() -> None:
             f"Size: {target_deb.stat().st_size}",
             f"SHA256: {digest(target_deb, 'sha256')}",
             "Description: Experimental rootless iPadOS port of OpenAI Codex CLI",
-            "Homepage: https://github.com/NikoVonLas/codex-ios",
+            "Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/codex",
             "",
         ]
     ).encode()

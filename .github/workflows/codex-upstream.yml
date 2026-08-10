@@ -1,0 +1,229 @@
+name: Update Codex for iPadOS
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Build the latest release even when it is already pinned
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: codex-upstream-update
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.release.outputs.changed }}
+      revision: ${{ steps.release.outputs.revision }}
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+      v8_asset: ${{ steps.release.outputs.v8_asset }}
+      v8_cached: ${{ steps.release.outputs.v8_cached }}
+      v8_tag: ${{ steps.release.outputs.v8_tag }}
+      v8_version: ${{ steps.release.outputs.v8_version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: release
+        name: Resolve latest stable Codex release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="$(gh api repos/openai/codex/releases/latest --jq .tag_name)"
+          if [[ ! "$tag" =~ ^rust-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Unexpected Codex release tag: $tag" >&2
+            exit 1
+          fi
+
+          object="$(gh api "repos/openai/codex/git/ref/tags/$tag")"
+          revision="$(jq -r .object.sha <<<"$object")"
+          object_type="$(jq -r .object.type <<<"$object")"
+          while [ "$object_type" = tag ]; do
+            object="$(gh api "repos/openai/codex/git/tags/$revision")"
+            revision="$(jq -r .object.sha <<<"$object")"
+            object_type="$(jq -r .object.type <<<"$object")"
+          done
+          [ "$object_type" = commit ]
+
+          current="$(sed -n 's/^CODEX_LAST_RELEASE=//p' ports/codex/config.env)"
+          version="${tag#rust-v}"
+          lockfile="$(gh api "repos/openai/codex/contents/codex-rs/Cargo.lock?ref=$revision" --jq .content | base64 --decode)"
+          runtime_manifest="$(gh api "repos/openai/codex/contents/codex-rs/code-mode-runtime/Cargo.toml?ref=$revision" --jq .content | base64 --decode)"
+          if ! grep -Eq '^v8 = .*features = \["v8_enable_sandbox"\]' <<<"$runtime_manifest"; then
+            echo "Unsupported upstream rust-v8 feature configuration" >&2
+            exit 1
+          fi
+          v8_version="$(sed -n '/^name = "v8"$/ { n; s/^version = "\([^"]*\)"$/\1/p; q; }' <<<"$lockfile")"
+          [ -n "$v8_version" ]
+          v8_tag="rusty-v8-v${v8_version}-ios"
+          v8_asset="librusty_v8_ptrcomp_sandbox_release_aarch64-apple-ios.a.gz"
+          v8_cached=false
+          if gh release view "$v8_tag" --repo "$GITHUB_REPOSITORY" --json assets \
+            --jq '.assets[].name' 2>/dev/null | grep -Fxq "$v8_asset"; then
+            v8_cached=true
+          fi
+          changed=false
+          if [ "$tag" != "$current" ]; then
+            changed=true
+          fi
+          {
+            echo "changed=$changed"
+            echo "revision=$revision"
+            echo "tag=$tag"
+            echo "version=$version"
+            echo "v8_asset=$v8_asset"
+            echo "v8_cached=$v8_cached"
+            echo "v8_tag=$v8_tag"
+            echo "v8_version=$v8_version"
+          } >> "$GITHUB_OUTPUT"
+
+  build-v8-cache:
+    needs: check
+    if: (needs.check.outputs.changed == 'true' || github.event.inputs.force == 'true') && needs.check.outputs.v8_cached != 'true'
+    runs-on: macos-15
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pin the new upstream release
+        run: |
+          python3 ports/codex/scripts/update-upstream.py \
+            "${{ needs.check.outputs.tag }}" \
+            "${{ needs.check.outputs.revision }}"
+
+      - name: Prepare toolchain
+        run: |
+          rustup target add aarch64-apple-ios
+          if ! command -v ldid >/dev/null 2>&1; then
+            brew install ldid
+          fi
+
+      - name: Build missing iOS V8 archive
+        env:
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 16
+          CARGO_PROFILE_RELEASE_DEBUG: 0
+          CARGO_PROFILE_RELEASE_LTO: "false"
+          CARGO_PROFILE_RELEASE_STRIP: symbols
+          CODEX_ONLY_CODE_MODE_HOST: 1
+          V8_FROM_SOURCE: 1
+        run: make codex-build
+
+      - name: Publish reusable iOS V8 archive
+        env:
+          ASSET_NAME: ${{ needs.check.outputs.v8_asset }}
+          CACHE_TAG: ${{ needs.check.outputs.v8_tag }}
+          GH_TOKEN: ${{ github.token }}
+          V8_VERSION: ${{ needs.check.outputs.v8_version }}
+        run: |
+          set -euo pipefail
+          archive="$(find ports/codex/.build/target -path '*/gn_out/obj/librusty_v8.a' -type f -print -quit)"
+          [ -n "$archive" ]
+          gzip -c "$archive" > "$RUNNER_TEMP/$ASSET_NAME"
+          gh release create "$CACHE_TAG" "$RUNNER_TEMP/$ASSET_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "rust-v8 $V8_VERSION for iOS" \
+            --notes "Reusable jitless aarch64-apple-ios build cache for automated Codex packages." \
+            --latest=false
+
+  build:
+    needs: [check, build-v8-cache]
+    if: always() && (needs.check.outputs.changed == 'true' || github.event.inputs.force == 'true') && (needs.build-v8-cache.result == 'success' || needs.build-v8-cache.result == 'skipped')
+    runs-on: macos-15
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pin the new upstream release
+        run: |
+          python3 ports/codex/scripts/update-upstream.py \
+            "${{ needs.check.outputs.tag }}" \
+            "${{ needs.check.outputs.revision }}"
+
+      - name: Prepare toolchain
+        run: |
+          rustup target add aarch64-apple-ios
+          if ! command -v ldid >/dev/null 2>&1; then
+            brew install ldid
+          fi
+
+      - id: v8
+        name: Download reusable iOS V8 archive
+        env:
+          ASSET_NAME: ${{ needs.check.outputs.v8_asset }}
+          CACHE_TAG: ${{ needs.check.outputs.v8_tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$CACHE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$ASSET_NAME" \
+            --dir "$RUNNER_TEMP"
+          echo "archive=$RUNNER_TEMP/$ASSET_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Build and package Codex
+        env:
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: 16
+          CARGO_PROFILE_RELEASE_DEBUG: 0
+          CARGO_PROFILE_RELEASE_LTO: "false"
+          CARGO_PROFILE_RELEASE_STRIP: symbols
+          RUSTY_V8_ARCHIVE: ${{ steps.v8.outputs.archive }}
+          V8_FROM_SOURCE: 0
+        run: |
+          make codex
+          make codex-repo
+          make codex-test
+
+      - name: Inspect package contents
+        run: |
+          set -euo pipefail
+          package="$(find ports/codex/dist -name '*.deb' -type f -print -quit)"
+          bsdtar -xOf "$package" data.tar.xz | bsdtar -tJf - | \
+            grep -Fx './var/jb/usr/bin/codex'
+          bsdtar -xOf "$package" data.tar.xz | bsdtar -tJf - | \
+            grep -Fx './var/jb/usr/bin/codex-code-mode-host'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codex-${{ needs.check.outputs.version }}-ios-rootless
+          path: ports/codex/dist/*.deb
+          if-no-files-found: error
+          retention-days: 30
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ports/codex/docs
+
+      - name: Commit successful update
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A ports/codex
+          git add -f ports/codex/docs/debs/*.deb
+          git commit -m "Update Codex for iPadOS to $VERSION"
+          git push origin HEAD:main
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

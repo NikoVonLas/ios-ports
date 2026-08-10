@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+
+sdk_root=$(xcrun --sdk macosx --show-sdk-path)
+
+args=()
+for arg in "$@"; do
+  case "$arg" in
+    -Wl,--start-group|-Wl,--end-group)
+      continue
+      ;;
+  esac
+  args+=("$arg")
+done
+
+exec xcrun --sdk macosx clang++ \
+  -isysroot "$sdk_root" \
+  -std=gnu++20 \
+  "${args[@]}"

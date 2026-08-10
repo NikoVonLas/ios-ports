@@ -20,6 +20,15 @@ export "CARGO_TARGET_${target_key}_LINKER=$clang"
 export "CARGO_TARGET_${target_key}_RUSTFLAGS=-C link-arg=-isysroot -C link-arg=$sdk_path -C link-arg=-miphoneos-version-min=$IOS_DEPLOYMENT_TARGET"
 
 only_code_mode_host="${CODEX_ONLY_CODE_MODE_HOST:-0}"
+
+# Tagged Codex release commits can carry a Cargo.lock whose workspace package
+# versions still read 0.0.0 after the release manifests have been stamped with
+# the published version. Let Cargo reconcile that local workspace metadata
+# while fetching dependencies, then keep every actual build locked.
+cargo fetch \
+  --manifest-path "$UPSTREAM_DIR/codex-rs/Cargo.toml" \
+  --target "$IOS_TARGET"
+
 if [[ "$only_code_mode_host" != 1 ]]; then
   cargo build \
     --manifest-path "$UPSTREAM_DIR/codex-rs/Cargo.toml" \
@@ -34,10 +43,6 @@ fi
 # Its source build automatically selects a jitless device configuration.
 v8_from_source="${V8_FROM_SOURCE:-1}"
 if [[ "$v8_from_source" == 1 ]]; then
-  cargo fetch \
-    --manifest-path "$UPSTREAM_DIR/codex-rs/Cargo.toml" \
-    --locked \
-    --target "$IOS_TARGET"
   python3 "$PROJECT_ROOT/scripts/prepare-v8-source.py"
 fi
 # Oilpan's default 4 GiB caged heap is rejected by the iOS process address-space

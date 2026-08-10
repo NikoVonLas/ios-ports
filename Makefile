@@ -1,32 +1,23 @@
-SHELL := /bin/bash
+SHELL := /bin/sh
 
-.PHONY: all check fetch build package repo test clean device-info install
+.PHONY: all nodejs nodejs-check nodejs-fetch nodejs-build nodejs-package clean
 
-all: package
+all: nodejs
 
-check:
-	./scripts/check-toolchain.sh
+nodejs:
+	$(MAKE) -C ports/nodejs all
 
-fetch:
-	./scripts/fetch-source.sh
+nodejs-check:
+	$(MAKE) -C ports/nodejs check
 
-build: check fetch
-	./scripts/build.sh
+nodejs-fetch:
+	$(MAKE) -C ports/nodejs fetch
 
-package: build
-	./scripts/package.sh
+nodejs-build:
+	$(MAKE) -C ports/nodejs build
 
-repo:
-	./scripts/make-repo.py
-
-test:
-	./tests/static.sh
-
-device-info:
-	./scripts/device-info.sh
-
-install:
-	./scripts/install-device.sh
+nodejs-package:
+	$(MAKE) -C ports/nodejs package
 
 clean:
-	rm -rf .build dist
+	$(MAKE) -C ports/nodejs clean

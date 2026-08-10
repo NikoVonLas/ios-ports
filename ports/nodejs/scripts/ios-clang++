@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+: "${IOS_DEPLOYMENT_TARGET:=15.0}"
+sdk_root=$(xcrun --sdk iphoneos --show-sdk-path)
+
+exec xcrun --sdk iphoneos clang++ \
+  -target "arm64-apple-ios$IOS_DEPLOYMENT_TARGET" \
+  -isysroot "$sdk_root" \
+  "$@"

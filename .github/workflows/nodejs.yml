@@ -1,0 +1,64 @@
+name: Build Node.js 24 for iOS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ports/nodejs/**
+      - Makefile
+      - .github/workflows/nodejs.yml
+  pull_request:
+    paths:
+      - ports/nodejs/**
+      - Makefile
+      - .github/workflows/nodejs.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nodejs-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          uname -a
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Install signing tool
+        run: brew install ldid
+
+      - name: Cache verified Node.js source archive
+        uses: actions/cache@v4
+        with:
+          path: ports/nodejs/build/downloads
+          key: nodejs-source-${{ hashFiles('ports/nodejs/config.env') }}
+
+      - name: Build rootless package
+        run: make nodejs
+
+      - name: Inspect package
+        run: |
+          file ports/nodejs/build/stage/var/jb/usr/lib/nodejs-ios24/node-bin
+          ldid -e ports/nodejs/build/stage/var/jb/usr/lib/nodejs-ios24/node-bin
+          shasum -a 256 -c ports/nodejs/dist/*.deb.sha256
+          ar -t ports/nodejs/dist/*.deb
+
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nodejs-24-ios-rootless
+          path: |
+            ports/nodejs/dist/*.deb
+            ports/nodejs/dist/*.deb.sha256
+          if-no-files-found: error
+          retention-days: 30

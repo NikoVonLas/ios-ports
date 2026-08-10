@@ -17,11 +17,15 @@ sed \
   -e "s/@PACKAGE_REVISION@/$PACKAGE_REVISION/g" \
   "$project_root/packaging/control.in" > "$control"
 
-output="$dist_root/nodejs_${NODE_VERSION}-${PACKAGE_REVISION}_iphoneos-arm64.deb"
+output_name="nodejs_${NODE_VERSION}-${PACKAGE_REVISION}_iphoneos-arm64.deb"
+output="$dist_root/$output_name"
 python3 "$project_root/scripts/make-deb.py" \
   --control "$control" \
   --data "$stage_root" \
   --output "$output"
 
-shasum -a 256 "$output" > "$output.sha256"
+(
+  cd "$dist_root"
+  shasum -a 256 "$output_name" > "$output_name.sha256"
+)
 echo "package: $output"

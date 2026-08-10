@@ -25,7 +25,7 @@ export IOS_DEPLOYMENT_TARGET
 export CC_host="$(xcrun -f clang)"
 export CXX_host="$(xcrun -f clang++)"
 export CFLAGS_host="-isysroot $host_sdk_root"
-export CXXFLAGS_host="-isysroot $host_sdk_root"
+export CXXFLAGS_host="-isysroot $host_sdk_root -std=gnu++20"
 export LDFLAGS_host="-isysroot $host_sdk_root"
 export CC_target="$project_root/scripts/ios-clang"
 export CXX_target="$project_root/scripts/ios-clang++"

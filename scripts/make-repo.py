@@ -39,12 +39,12 @@ def main() -> None:
     relative_deb = target_deb.relative_to(REPO).as_posix()
     package = "\n".join(
         [
-            "Package: com.openai.codex-ios",
+            "Package: com.nikovonlas.codex-ios",
             "Name: Codex CLI for iPadOS",
             f"Version: {VERSION}",
             f"Architecture: {ARCH}",
-            "Maintainer: Shamaal World",
-            "Author: OpenAI (upstream), community iPadOS port",
+            "Maintainer: NikoVonLas",
+            "Author: OpenAI (upstream), NikoVonLas (iPadOS port)",
             "Section: Development",
             "Priority: optional",
             "Depends: firmware (>= 15.0), bash, ca-certificates, git, ldid, openssh-client, ripgrep",
@@ -52,7 +52,7 @@ def main() -> None:
             f"Size: {target_deb.stat().st_size}",
             f"SHA256: {digest(target_deb, 'sha256')}",
             "Description: Experimental rootless iPadOS port of OpenAI Codex CLI",
-            "Homepage: https://github.com/openai/codex",
+            "Homepage: https://github.com/NikoVonLas/codex-ios",
             "",
         ]
     ).encode()
@@ -65,7 +65,7 @@ def main() -> None:
             archive.write(package)
 
     release_lines = [
-        "Origin: Shamaal World",
+        "Origin: NikoVonLas",
         "Label: Codex for iPadOS",
         "Suite: stable",
         "Codename: stable",

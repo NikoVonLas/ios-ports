@@ -5,14 +5,22 @@ set -euo pipefail
 sdk_root=$(xcrun --sdk iphoneos --show-sdk-path)
 
 args=()
+linking=1
 for arg in "$@"; do
   case "$arg" in
     -Wl,--start-group|-Wl,--end-group)
       continue
       ;;
+    -c)
+      linking=0
+      ;;
   esac
   args+=("$arg")
 done
+
+if [[ "$linking" == "1" ]]; then
+  args+=(-framework CoreFoundation)
+fi
 
 exec xcrun --sdk iphoneos clang++ \
   -target "arm64-apple-ios$IOS_DEPLOYMENT_TARGET" \

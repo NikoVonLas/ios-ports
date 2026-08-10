@@ -40,7 +40,13 @@ if [[ "$v8_from_source" == 1 ]]; then
     --target "$IOS_TARGET"
   python3 "$PROJECT_ROOT/scripts/prepare-v8-source.py"
 fi
-V8_FROM_SOURCE="$v8_from_source" cargo build \
+# Oilpan's default 4 GiB caged heap is rejected by the iOS process address-space
+# policy even when the main V8 sandbox is disabled.
+v8_gn_args="${EXTRA_GN_ARGS:-}"
+if [[ "$IOS_TARGET" == *-apple-ios ]]; then
+  v8_gn_args="${v8_gn_args:+$v8_gn_args }cppgc_enable_caged_heap=false cppgc_enable_pointer_compression=false"
+fi
+EXTRA_GN_ARGS="$v8_gn_args" V8_FROM_SOURCE="$v8_from_source" cargo build \
   --manifest-path "$UPSTREAM_DIR/codex-rs/Cargo.toml" \
   --locked \
   --release \

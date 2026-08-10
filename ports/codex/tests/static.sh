@@ -16,6 +16,9 @@ grep -q '/var/jb/usr/bin/codex' scripts/package.sh
 grep -q '/var/jb/usr/bin/codex-code-mode-host' scripts/package.sh
 grep -q 'CODEX_ONLY_CODE_MODE_HOST' scripts/build.sh
 grep -q 'V8_FROM_SOURCE:-1' scripts/build.sh
+grep -q 'cppgc_enable_caged_heap=false cppgc_enable_pointer_compression=false' scripts/build.sh
+grep -q "target_os = \\\"ios\\\"" patches/0003-disable-v8-sandbox-on-ios.patch
+grep -q 'v8 = { workspace = true, features = \["v8_enable_sandbox"\] }' patches/0003-disable-v8-sandbox-on-ios.patch
 grep -q '^ldid -S/var/jb/usr/share/codex-ios/entitlements.plist' packaging/postinst
 grep -q "CONFIG\['PACKAGE_VERSION'\]" scripts/make-repo.py
 

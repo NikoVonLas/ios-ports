@@ -68,7 +68,7 @@ jobs:
           v8_version="$(sed -n '/^name = "v8"$/ { n; s/^version = "\([^"]*\)"$/\1/p; q; }' <<<"$lockfile")"
           [ -n "$v8_version" ]
           v8_tag="rusty-v8-v${v8_version}-ios"
-          v8_asset="librusty_v8_ptrcomp_sandbox_release_aarch64-apple-ios.a.gz"
+          v8_asset="librusty_v8_nocage_release_aarch64-apple-ios.a.gz"
           v8_cached=false
           if gh release view "$v8_tag" --repo "$GITHUB_REPOSITORY" --json assets \
             --jq '.assets[].name' 2>/dev/null | grep -Fxq "$v8_asset"; then
@@ -131,11 +131,16 @@ jobs:
           archive="$(find ports/codex/.build/target -path '*/gn_out/obj/librusty_v8.a' -type f -print -quit)"
           [ -n "$archive" ]
           gzip -c "$archive" > "$RUNNER_TEMP/$ASSET_NAME"
-          gh release create "$CACHE_TAG" "$RUNNER_TEMP/$ASSET_NAME" \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "rust-v8 $V8_VERSION for iOS" \
-            --notes "Reusable jitless aarch64-apple-ios build cache for automated Codex packages." \
-            --latest=false
+          if gh release view "$CACHE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$CACHE_TAG" "$RUNNER_TEMP/$ASSET_NAME" \
+              --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$CACHE_TAG" "$RUNNER_TEMP/$ASSET_NAME" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "rust-v8 $V8_VERSION for iOS" \
+              --notes "Reusable jitless aarch64-apple-ios build caches for automated Codex packages." \
+              --latest=false
+          fi
 
   build:
     needs: [check, build-v8-cache]

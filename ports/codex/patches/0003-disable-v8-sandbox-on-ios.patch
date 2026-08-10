@@ -1,0 +1,13 @@
+diff --git a/codex-rs/code-mode-runtime/Cargo.toml b/codex-rs/code-mode-runtime/Cargo.toml
+index e3708b657e..1926ffed2f 100644
+--- a/codex-rs/code-mode-runtime/Cargo.toml
++++ b/codex-rs/code-mode-runtime/Cargo.toml
+@@ -23,0 +24,2 @@ tracing = { workspace = true }
++
++[target.'cfg(not(target_os = "ios"))'.dependencies]
+@@ -25,2 +28,4 @@ v8 = { workspace = true, features = ["v8_enable_sandbox"] }
+-
++[target.'cfg(target_os = "ios")'.dependencies]
++v8 = { workspace = true }
++
+ [dev-dependencies]

@@ -29,6 +29,7 @@ jobs:
       tag: ${{ steps.release.outputs.tag }}
       version: ${{ steps.release.outputs.version }}
       v8_asset: ${{ steps.release.outputs.v8_asset }}
+      v8_binding_asset: ${{ steps.release.outputs.v8_binding_asset }}
       v8_cached: ${{ steps.release.outputs.v8_cached }}
       v8_tag: ${{ steps.release.outputs.v8_tag }}
       v8_version: ${{ steps.release.outputs.v8_version }}
@@ -69,9 +70,12 @@ jobs:
           [ -n "$v8_version" ]
           v8_tag="rusty-v8-v${v8_version}-ios"
           v8_asset="librusty_v8_nocage_release_aarch64-apple-ios.a.gz"
+          v8_binding_asset="src_binding_nocage_release_aarch64-apple-ios.rs"
           v8_cached=false
-          if gh release view "$v8_tag" --repo "$GITHUB_REPOSITORY" --json assets \
-            --jq '.assets[].name' 2>/dev/null | grep -Fxq "$v8_asset"; then
+          release_assets="$(gh release view "$v8_tag" --repo "$GITHUB_REPOSITORY" \
+            --json assets --jq '.assets[].name' 2>/dev/null || true)"
+          if grep -Fxq "$v8_asset" <<<"$release_assets" && \
+            grep -Fxq "$v8_binding_asset" <<<"$release_assets"; then
             v8_cached=true
           fi
           changed=false
@@ -84,6 +88,7 @@ jobs:
             echo "tag=$tag"
             echo "version=$version"
             echo "v8_asset=$v8_asset"
+            echo "v8_binding_asset=$v8_binding_asset"
             echo "v8_cached=$v8_cached"
             echo "v8_tag=$v8_tag"
             echo "v8_version=$v8_version"
@@ -123,19 +128,28 @@ jobs:
       - name: Publish reusable iOS V8 archive
         env:
           ASSET_NAME: ${{ needs.check.outputs.v8_asset }}
+          BINDING_ASSET_NAME: ${{ needs.check.outputs.v8_binding_asset }}
           CACHE_TAG: ${{ needs.check.outputs.v8_tag }}
           GH_TOKEN: ${{ github.token }}
           V8_VERSION: ${{ needs.check.outputs.v8_version }}
         run: |
           set -euo pipefail
           archive="$(find ports/codex/.build/target -path '*/gn_out/obj/librusty_v8.a' -type f -print -quit)"
+          binding="$(find ports/codex/.build/target -path '*/gn_out/src_binding.rs' -type f -print -quit)"
           [ -n "$archive" ]
+          [ -n "$binding" ]
           gzip -c "$archive" > "$RUNNER_TEMP/$ASSET_NAME"
+          cp "$binding" "$RUNNER_TEMP/$BINDING_ASSET_NAME"
           if gh release view "$CACHE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$CACHE_TAG" "$RUNNER_TEMP/$ASSET_NAME" \
-              --repo "$GITHUB_REPOSITORY"
+            gh release upload "$CACHE_TAG" \
+              "$RUNNER_TEMP/$ASSET_NAME" \
+              "$RUNNER_TEMP/$BINDING_ASSET_NAME" \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
           else
-            gh release create "$CACHE_TAG" "$RUNNER_TEMP/$ASSET_NAME" \
+            gh release create "$CACHE_TAG" \
+              "$RUNNER_TEMP/$ASSET_NAME" \
+              "$RUNNER_TEMP/$BINDING_ASSET_NAME" \
               --repo "$GITHUB_REPOSITORY" \
               --title "rust-v8 $V8_VERSION for iOS" \
               --notes "Reusable jitless aarch64-apple-ios build caches for automated Codex packages." \
@@ -167,14 +181,17 @@ jobs:
         name: Download reusable iOS V8 archive
         env:
           ASSET_NAME: ${{ needs.check.outputs.v8_asset }}
+          BINDING_ASSET_NAME: ${{ needs.check.outputs.v8_binding_asset }}
           CACHE_TAG: ${{ needs.check.outputs.v8_tag }}
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download "$CACHE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --pattern "$ASSET_NAME" \
+            --pattern "$BINDING_ASSET_NAME" \
             --dir "$RUNNER_TEMP"
           echo "archive=$RUNNER_TEMP/$ASSET_NAME" >> "$GITHUB_OUTPUT"
+          echo "binding=$RUNNER_TEMP/$BINDING_ASSET_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Build and package Codex
         env:
@@ -183,6 +200,7 @@ jobs:
           CARGO_PROFILE_RELEASE_LTO: "false"
           CARGO_PROFILE_RELEASE_STRIP: symbols
           RUSTY_V8_ARCHIVE: ${{ steps.v8.outputs.archive }}
+          RUSTY_V8_SRC_BINDING_PATH: ${{ steps.v8.outputs.binding }}
           V8_FROM_SOURCE: 0
         run: |
           make codex

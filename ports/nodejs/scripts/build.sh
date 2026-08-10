@@ -12,6 +12,7 @@ if [ ! -f "$source_root/configure" ]; then
 fi
 
 sdk_root=$(xcrun --sdk iphoneos --show-sdk-path)
+host_sdk_root=$(xcrun --sdk macosx --show-sdk-path)
 jobs=$(sysctl -n hw.logicalcpu 2>/dev/null || echo 4)
 
 rm -rf "$stage_root"
@@ -23,6 +24,9 @@ make distclean >/dev/null 2>&1 || true
 export IOS_DEPLOYMENT_TARGET
 export CC_host="$(xcrun -f clang)"
 export CXX_host="$(xcrun -f clang++)"
+export CFLAGS_host="-isysroot $host_sdk_root"
+export CXXFLAGS_host="-isysroot $host_sdk_root"
+export LDFLAGS_host="-isysroot $host_sdk_root"
 export CC_target="$project_root/scripts/ios-clang"
 export CXX_target="$project_root/scripts/ios-clang++"
 export AR_target="$(xcrun --sdk iphoneos -f ar)"

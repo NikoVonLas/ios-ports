@@ -12,3 +12,21 @@ Size: 70392560
 SHA256: 7519fbadcfaca67bab7d2bdf18801056acda9f73bb8042f157dfeacd8502ba2b
 Description: Experimental rootless iPadOS port of OpenAI Codex CLI
 Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/codex
+
+Package: nodejs-ios24
+Name: Node.js 24 LTS
+Version: 24.18.1-1
+Architecture: iphoneos-arm64
+Maintainer: NikoVonLas
+Section: Development
+Priority: optional
+Depends: firmware (>= 15.0), zsh
+Conflicts: nodejs, nodejs-ios
+Provides: nodejs, npm
+Tag: purpose::console, role::developer
+Filename: debs/nodejs_24.18.1-1_iphoneos-arm64.deb
+Size: 37982160
+SHA256: 228a451c15a5db78dd78602d7a55fe5cd75e390007a8ad59b98140b18224f9db
+Description: Node.js 24 LTS and npm for rootless jailbroken iOS
+ Native arm64 Node.js runtime packaged below /var/jb for iOS 15 and later.
+Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/nodejs

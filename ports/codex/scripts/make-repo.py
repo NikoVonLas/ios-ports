@@ -56,7 +56,7 @@ def main() -> None:
     shutil.copy2(source_deb, target_deb)
 
     relative_deb = target_deb.relative_to(REPO).as_posix()
-    package = "\n".join(
+    package_stanzas = [
         [
             "Package: com.nikovonlas.codex-ios",
             "Name: Codex CLI for iPadOS",
@@ -72,8 +72,39 @@ def main() -> None:
             f"SHA256: {digest(target_deb, 'sha256')}",
             "Description: Experimental rootless iPadOS port of OpenAI Codex CLI",
             "Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/codex",
-            "",
         ]
+    ]
+
+    node_debs = sorted(pool.glob(f"nodejs_*_{ARCH}.deb"))
+    if node_debs:
+        node_deb = node_debs[-1]
+        prefix = "nodejs_"
+        suffix = f"_{ARCH}.deb"
+        node_version = node_deb.name[len(prefix) : -len(suffix)]
+        package_stanzas.append(
+            [
+                "Package: nodejs-ios24",
+                "Name: Node.js 24 LTS",
+                f"Version: {node_version}",
+                f"Architecture: {ARCH}",
+                "Maintainer: NikoVonLas",
+                "Section: Development",
+                "Priority: optional",
+                "Depends: firmware (>= 15.0), zsh",
+                "Conflicts: nodejs, nodejs-ios",
+                "Provides: nodejs, npm",
+                "Tag: purpose::console, role::developer",
+                f"Filename: {node_deb.relative_to(REPO).as_posix()}",
+                f"Size: {node_deb.stat().st_size}",
+                f"SHA256: {digest(node_deb, 'sha256')}",
+                "Description: Node.js 24 LTS and npm for rootless jailbroken iOS",
+                " Native arm64 Node.js runtime packaged below /var/jb for iOS 15 and later.",
+                "Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/nodejs",
+            ]
+        )
+
+    package = (
+        "\n\n".join("\n".join(stanza) for stanza in package_stanzas) + "\n"
     ).encode()
 
     packages = REPO / "Packages"
@@ -85,13 +116,13 @@ def main() -> None:
 
     release_lines = [
         "Origin: NikoVonLas",
-        "Label: Codex for iPadOS",
+        "Label: NikoVonLas iOS Ports",
         "Suite: stable",
         "Codename: stable",
         "Version: 1.0",
         f"Architectures: {ARCH}",
         "Components: main",
-        "Description: Experimental Codex CLI packages for rootless iPadOS",
+        "Description: Developer tool ports for rootless iOS and iPadOS",
         "SHA256:",
     ]
     for path in (packages, packages_gz):

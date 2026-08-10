@@ -1,0 +1,37 @@
+diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
+index 0812d95e2c..005968605f 100644
+--- a/src/crypto/crypto_context.cc
++++ b/src/crypto/crypto_context.cc
+@@ -17,6 +17,7 @@
+ #include <openssl/engine.h>
+ #endif  // !OPENSSL_NO_ENGINE
+ #ifdef __APPLE__
++#include <TargetConditionals.h>
+ #include <Security/Security.h>
+ #endif
+ 
+@@ -271,5 +272,5 @@ bool isSelfIssued(X509* cert) {
+ // https://chromium.googlesource.com/chromium/src/+/HEAD/LICENSE for
+ // details.
+-#ifdef __APPLE__
++#if defined(__APPLE__) && !TARGET_OS_IPHONE
+ TrustStatus IsTrustDictionaryTrustedForPolicy(CFDictionaryRef trust_dict,
+                                               bool is_self_issued) {
+@@ -608,7 +609,7 @@ void ReadMacOSKeychainCertificates(
+   }
+   CFRelease(curr_anchors);
+ }
+-#endif  // __APPLE__
++#endif  // defined(__APPLE__) && !TARGET_OS_IPHONE
+ 
+ #ifdef _WIN32
+ 
+@@ -876,7 +877,7 @@ static std::vector<X509*> InitializeBundledRootCertificates() {
+ 
+ static std::vector<X509*> InitializeSystemStoreCertificates() {
+   std::vector<X509*> system_store_certs;
+-#ifdef __APPLE__
++#if defined(__APPLE__) && !TARGET_OS_IPHONE
+   ReadMacOSKeychainCertificates(&system_store_certs);
+ #endif
+ #ifdef _WIN32

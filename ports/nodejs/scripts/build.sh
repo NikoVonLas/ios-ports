@@ -11,6 +11,18 @@ if [ ! -f "$source_root/configure" ]; then
   exit 1
 fi
 
+for patch_file in "$project_root"/patches/*.patch; do
+  [ -e "$patch_file" ] || continue
+  if patch -d "$source_root" -p1 --dry-run < "$patch_file" >/dev/null; then
+    patch -d "$source_root" -p1 < "$patch_file"
+  elif patch -d "$source_root" -p1 -R --dry-run < "$patch_file" >/dev/null; then
+    echo "patch already applied: $(basename "$patch_file")"
+  else
+    echo "error: patch does not apply: $patch_file" >&2
+    exit 1
+  fi
+done
+
 sdk_root=$(xcrun --sdk iphoneos --show-sdk-path)
 host_sdk_root=$(xcrun --sdk macosx --show-sdk-path)
 jobs=$(sysctl -n hw.logicalcpu 2>/dev/null || echo 4)

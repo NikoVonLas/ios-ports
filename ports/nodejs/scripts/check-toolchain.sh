@@ -9,7 +9,7 @@ if [ "$(uname -s)" != "Darwin" ]; then
   exit 1
 fi
 
-for tool in xcrun python3 make curl shasum; do
+for tool in xcrun python3 make curl shasum patch; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "error: required tool not found: $tool" >&2
     exit 1

@@ -1,0 +1,11 @@
+Origin: Shamaal World
+Label: Codex for iPadOS
+Suite: stable
+Codename: stable
+Version: 1.0
+Architectures: iphoneos-arm64
+Components: main
+Description: Experimental Codex CLI packages for rootless iPadOS
+SHA256:
+ 0871d9ffdae6ce1ee1d482e5896eb03b98f7a65975a00e82bd798349744bbb21              554 Packages
+ fdc036d81973d6fef0bbe17164f0a6241f1fb87b31fab48949b838c66af6c870              403 Packages.gz

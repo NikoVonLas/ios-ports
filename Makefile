@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: all check fetch build package test clean device-info install
+.PHONY: all check fetch build package repo test clean device-info install
 
 all: package
 
@@ -16,6 +16,9 @@ build: check fetch
 package: build
 	./scripts/package.sh
 
+repo:
+	./scripts/make-repo.py
+
 test:
 	./tests/static.sh
 
@@ -27,4 +30,3 @@ install:
 
 clean:
 	rm -rf .build dist
-

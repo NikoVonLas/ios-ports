@@ -1,0 +1,14 @@
+Package: com.openai.codex-ios
+Name: Codex CLI for iPadOS
+Version: 0.1.0-1
+Architecture: iphoneos-arm64
+Maintainer: Shamaal World
+Author: OpenAI (upstream), community iPadOS port
+Section: Development
+Priority: optional
+Depends: firmware (>= 15.0), bash, ca-certificates, git, ldid, openssh-client, ripgrep
+Filename: debs/codex-ios_0.1.0-1_iphoneos-arm64.deb
+Size: 60707028
+SHA256: 09ca5a80c6786ffee5fa6b37b8b247713219010006da7a9f95edaaf716941927
+Description: Experimental rootless iPadOS port of OpenAI Codex CLI
+Homepage: https://github.com/openai/codex

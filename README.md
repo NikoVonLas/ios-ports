@@ -61,6 +61,23 @@ commit in `config.env`, and left out of Git.
 If host-side `ldid` is unavailable, the package's `postinst` signs the binary
 on the iPad with the same reviewed entitlements.
 
+## Install from Sileo
+
+Generate the flat APT repository published by GitHub Pages:
+
+```sh
+make repo
+```
+
+The generated `docs/` directory contains `Packages`, `Release`, and the `.deb`.
+After pushing `main`, GitHub Pages publishes it at:
+
+```text
+https://nikovonlas.github.io/codex-ios/
+```
+
+Add that URL as a Sileo source.
+
 ## Install over USB
 
 In one terminal, expose jailbreak SSH through usbmuxd:

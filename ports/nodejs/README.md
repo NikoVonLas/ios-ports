@@ -53,7 +53,7 @@ extracted.
 Copy the package to the device and install it:
 
 ```sh
-sudo dpkg -i nodejs_24.18.1-2_iphoneos-arm64.deb
+sudo dpkg -i nodejs_24.18.1-3_iphoneos-arm64.deb
 node --version
 npm --version
 node /var/jb/usr/share/nodejs-ios24/smoke.js
@@ -63,6 +63,10 @@ The installed `node` command is a small wrapper that runs V8 with `--jitless`.
 This avoids a `SIGBUS` when V8 tries to allocate executable memory on Dopamine,
 including during npm startup. Set `NODE_IOS_ALLOW_JIT=1` only for testing on a
 device and jailbreak that provide working JIT memory mappings.
+
+The wrapper also pins npm's global prefix to `/var/jb/usr`. Without this, npm
+resolves the rootless symlink and incorrectly installs global packages below
+`/var/jb/usr/lib/lib/node_modules`.
 
 ## Important limitation
 

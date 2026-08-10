@@ -3,6 +3,10 @@ set -eu
 
 node_bin=/var/jb/usr/lib/nodejs-ios24/node-bin
 
+# npm resolves /var/jb symlinks to the rootless preboot path and otherwise
+# mistakes .../usr/lib for the global prefix, producing usr/lib/lib/node_modules.
+export NPM_CONFIG_PREFIX="${NPM_CONFIG_PREFIX:-/var/jb/usr}"
+
 if [[ "${NODE_IOS_ALLOW_JIT:-0}" == "1" ]]; then
   exec "$node_bin" "$@"
 fi

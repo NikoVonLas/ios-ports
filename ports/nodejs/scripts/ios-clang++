@@ -1,11 +1,21 @@
-#!/bin/sh
-set -eu
+#!/bin/bash
+set -euo pipefail
 
 : "${IOS_DEPLOYMENT_TARGET:=15.0}"
 sdk_root=$(xcrun --sdk iphoneos --show-sdk-path)
+
+args=()
+for arg in "$@"; do
+  case "$arg" in
+    -Wl,--start-group|-Wl,--end-group)
+      continue
+      ;;
+  esac
+  args+=("$arg")
+done
 
 exec xcrun --sdk iphoneos clang++ \
   -target "arm64-apple-ios$IOS_DEPLOYMENT_TARGET" \
   -isysroot "$sdk_root" \
   -std=gnu++20 \
-  "$@"
+  "${args[@]}"

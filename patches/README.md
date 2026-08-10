@@ -1,7 +1,10 @@
 # Upstream patches
 
-Keep iPadOS-specific source patches here and apply them from `scripts/build.sh`.
-The first port intentionally carries no speculative source patches: upstream's
-unsupported-Unix path already selects `SandboxType::None`. Add patches only in
-response to a reproducible cross-build or device-runtime failure.
+Keep iPadOS-specific source patches here. `scripts/fetch-source.sh` resets the
+checkout to the pinned revision and applies every numbered patch in order.
 
+`0001-disable-arboard-on-ios.patch` prevents the TUI from selecting arboard's
+Linux Wayland/X11 backend on iOS and retains OSC 52 terminal clipboard fallback.
+
+`0002-define-rlimit-exit-code-on-ios.patch` makes the shared Unix core-limit
+helper compile on iOS without enabling macOS-only ptrace hardening.

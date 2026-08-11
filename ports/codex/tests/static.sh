@@ -21,6 +21,7 @@ grep -q 'Let Cargo reconcile that local workspace metadata' scripts/build.sh
 grep -q 'cppgc_enable_caged_heap=false cppgc_enable_pointer_compression=false' scripts/build.sh
 grep -q 'RUSTY_V8_SRC_BINDING_PATH' ../../.github/workflows/codex-upstream.yml
 grep -q 'src_binding_nocage_release_aarch64-apple-ios.rs' ../../.github/workflows/codex-upstream.yml
+grep -q "needs.build.result == 'success'" ../../.github/workflows/codex-upstream.yml
 grep -q "target_os = \\\"ios\\\"" patches/0003-disable-v8-sandbox-on-ios.patch
 grep -q 'v8 = { workspace = true, features = \["v8_enable_sandbox"\] }' patches/0003-disable-v8-sandbox-on-ios.patch
 grep -q '^ldid -S/var/jb/usr/share/codex-ios/entitlements.plist' packaging/postinst

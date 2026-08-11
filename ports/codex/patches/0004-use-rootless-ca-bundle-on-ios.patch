@@ -1,0 +1,44 @@
+diff --git a/codex-rs/http-client/src/custom_ca.rs b/codex-rs/http-client/src/custom_ca.rs
+index 5a2e51c320..b80ab293cf 100644
+--- a/codex-rs/http-client/src/custom_ca.rs
++++ b/codex-rs/http-client/src/custom_ca.rs
+@@ -60,6 +60,10 @@ use tracing::warn;
+ 
+ pub const CODEX_CA_CERT_ENV: &str = "CODEX_CA_CERTIFICATE";
+ pub const SSL_CERT_FILE_ENV: &str = "SSL_CERT_FILE";
++#[cfg(target_os = "ios")]
++const IOS_ROOTLESS_CA_PATH: &str = "/var/jb/etc/ssl/cert.pem";
++#[cfg(target_os = "ios")]
++const IOS_ROOTLESS_CA_SOURCE: &str = "iOS rootless CA bundle";
+ const CA_CERT_HINT: &str = "If you set CODEX_CA_CERTIFICATE or SSL_CERT_FILE, ensure it points to a PEM file containing one or more CERTIFICATE blocks, or unset it to use system roots.";
+ type PemSection = (SectionKind, Vec<u8>);
+ 
+@@ -408,9 +412,28 @@ trait EnvSource {
+                         path,
+                     })
+             })
++            .or_else(ios_rootless_ca_bundle)
+     }
+ }
+ 
++/// Uses the Procursus CA bundle when iOS does not expose it through the native root store.
++///
++/// Rootless jailbreak packages install their TLS roots below `/var/jb`. Explicit Codex and
++/// OpenSSL-compatible environment overrides retain precedence over this platform default.
++fn ios_rootless_ca_bundle() -> Option<ConfiguredCaBundle> {
++    #[cfg(target_os = "ios")]
++    {
++        let path = PathBuf::from(IOS_ROOTLESS_CA_PATH);
++        return path.is_file().then_some(ConfiguredCaBundle {
++            source_env: IOS_ROOTLESS_CA_SOURCE,
++            path,
++        });
++    }
++
++    #[cfg(not(target_os = "ios"))]
++    None
++}
++
+ /// Reads CA configuration from the real process environment.
+ ///
+ /// This is the production `EnvSource` implementation used by

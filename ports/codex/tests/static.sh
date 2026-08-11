@@ -29,6 +29,8 @@ grep -q 'target_os = "ios"' patches/0003-disable-v8-sandbox-on-ios.patch
 not_ios_line="$(grep -nF '+[target.'\''cfg(not(target_os = "ios"))'\''.dependencies]' patches/0003-disable-v8-sandbox-on-ios.patch | cut -d: -f1)"
 sandbox_line="$(grep -nF 'v8 = { workspace = true, features = ["v8_enable_sandbox"] }' patches/0003-disable-v8-sandbox-on-ios.patch | cut -d: -f1)"
 [[ "$not_ios_line" -lt "$sandbox_line" ]]
+grep -q 'IOS_ROOTLESS_CA_PATH: &str = "/var/jb/etc/ssl/cert.pem"' patches/0004-use-rootless-ca-bundle-on-ios.patch
+grep -q '\.or_else(ios_rootless_ca_bundle)' patches/0004-use-rootless-ca-bundle-on-ios.patch
 grep -q '^ldid -S/var/jb/usr/share/codex-ios/entitlements.plist' packaging/postinst
 grep -q "CONFIG\['PACKAGE_VERSION'\]" scripts/make-repo.py
 

@@ -12,3 +12,7 @@ helper compile on iOS without enabling macOS-only ptrace hardening.
 `0003-disable-v8-sandbox-on-ios.patch` keeps the V8 sandbox enabled on supported
 desktop targets but disables it on iOS, whose process address-space policy
 prevents V8 from reserving the sandbox cage.
+
+`0004-use-rootless-ca-bundle-on-ios.patch` makes the shared HTTPS/WebSocket TLS
+layer use Procursus' `/var/jb/etc/ssl/cert.pem` when no explicit CA override is
+set, because rustls' native certificate discovery does not find it on iOS.

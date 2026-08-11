@@ -20,6 +20,13 @@ def replace_value(text: str, key: str, value: str) -> str:
     return pattern.sub(replacement, text, count=1)
 
 
+def read_value(text: str, key: str) -> str:
+    match = re.search(rf"^{re.escape(key)}=(.*)$", text, re.MULTILINE)
+    if match is None:
+        raise SystemExit(f"missing {key} in config")
+    return match.group(1)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("tag")
@@ -38,10 +45,12 @@ def main() -> None:
         raise SystemExit("revision must be a lowercase 40-character commit SHA")
 
     text = args.config.read_text()
+    same_release = read_value(text, "CODEX_LAST_RELEASE") == args.tag
     text = replace_value(text, "CODEX_LAST_RELEASE", args.tag)
     text = replace_value(text, "CODEX_REVISION", args.revision)
     text = replace_value(text, "PACKAGE_VERSION", tag_match.group(1))
-    text = replace_value(text, "PACKAGE_REVISION", "1")
+    if not same_release:
+        text = replace_value(text, "PACKAGE_REVISION", "1")
     args.config.write_text(text)
 
 

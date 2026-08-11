@@ -68,7 +68,11 @@ jobs:
           fi
           v8_version="$(sed -n '/^name = "v8"$/ { n; s/^version = "\([^"]*\)"$/\1/p; q; }' <<<"$lockfile")"
           [ -n "$v8_version" ]
-          v8_tag="rusty-v8-v${v8_version}-ios"
+          # Bind the binary cache to every local input that controls V8.
+          v8_config_hash="$(cat \
+            ports/codex/patches/0003-disable-v8-sandbox-on-ios.patch \
+            ports/codex/scripts/build.sh | sha256sum | cut -c1-12)"
+          v8_tag="rusty-v8-v${v8_version}-ios-${v8_config_hash}"
           v8_asset="librusty_v8_nocage_release_aarch64-apple-ios.a.gz"
           v8_binding_asset="src_binding_nocage_release_aarch64-apple-ios.rs"
           v8_cached=false

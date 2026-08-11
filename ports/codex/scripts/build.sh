@@ -29,6 +29,25 @@ cargo fetch \
   --manifest-path "$UPSTREAM_DIR/codex-rs/Cargo.toml" \
   --target "$IOS_TARGET"
 
+# V8's sandbox reserves a huge virtual-address cage that iOS rejects before the
+# Code Mode host can process its first request. Catch an accidentally re-enabled
+# Cargo feature before spending time compiling either Codex or rusty_v8.
+if [[ "$IOS_TARGET" == *-apple-ios ]]; then
+  v8_features="$(
+    cargo tree \
+      --manifest-path "$UPSTREAM_DIR/codex-rs/Cargo.toml" \
+      --locked \
+      --target "$IOS_TARGET" \
+      -p codex-code-mode-host \
+      -i v8 \
+      -e features
+  )"
+  if grep -Eq 'v8_enable_(sandbox|pointer_compression)' <<<"$v8_features"; then
+    printf '%s\n' "$v8_features" >&2
+    die "V8 sandbox and pointer compression must be disabled for iOS"
+  fi
+fi
+
 if [[ "$only_code_mode_host" != 1 ]]; then
   cargo build \
     --manifest-path "$UPSTREAM_DIR/codex-rs/Cargo.toml" \

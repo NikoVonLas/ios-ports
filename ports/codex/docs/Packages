@@ -8,8 +8,8 @@ Section: Development
 Priority: optional
 Depends: firmware (>= 15.0), bash, ca-certificates, git, ldid, openssh-client, ripgrep
 Filename: debs/codex-ios_0.147.0-3_iphoneos-arm64.deb
-Size: 64839012
-SHA256: 53fdb9293522507e0c889e2888b9156642593a75d45bb72a79431e2f5c9870ec
+Size: 64830692
+SHA256: 081b63e28f8ecdf27ce2986b913fe7998b496337273d46e6e723b6b0553141b7
 Description: Experimental rootless iPadOS port of OpenAI Codex CLI
 Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/codex
 

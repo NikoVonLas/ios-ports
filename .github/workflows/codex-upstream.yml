@@ -17,7 +17,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: codex-upstream-update
+  group: ios-ports-upstream-update
   cancel-in-progress: false
 
 jobs:

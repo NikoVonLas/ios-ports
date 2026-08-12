@@ -9,8 +9,9 @@ rootless jailbroken arm64 iOS and iPadOS devices.
 | --- | --- | --- | --- |
 | [Node.js](ports/nodejs) | 24.18.1 LTS | `nodejs-ios24` | Active |
 | [OpenAI Codex](ports/codex) | Automatically tracked stable release | `codex-ios` | Active |
+| [GitHub CLI](ports/github-cli) | Automatically tracked stable release | `github-cli-ios` | Active |
 
-Both ports target rootless arm64 iOS/iPadOS.
+All ports target rootless arm64 iOS/iPadOS.
 
 ## Build Node.js
 
@@ -44,3 +45,18 @@ built and inspected on GitHub-hosted Apple Silicon macOS runners, committed
 only after success, and then deployed as the Sileo repository. A versioned
 source build of rust-v8 is stored as a reusable release asset, so ordinary
 Codex updates only download the roughly 40 MB compressed V8 archive.
+
+## Build GitHub CLI
+
+GitHub CLI is a native Go program and cross-compiles directly to the official
+`ios/arm64` Go target:
+
+```sh
+make github-cli
+make github-cli-repo
+```
+
+The `Update GitHub CLI for iPadOS` workflow checks the official `cli/cli`
+latest release once per hour. It pins the resolved commit SHA, builds and signs
+the rootless package on macOS, inspects the package, and only then publishes it
+to the shared Sileo repository.

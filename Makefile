@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: all nodejs nodejs-check nodejs-fetch nodejs-build nodejs-package codex codex-check codex-fetch codex-build codex-package codex-repo codex-test clean
+.PHONY: all nodejs nodejs-check nodejs-fetch nodejs-build nodejs-package codex codex-check codex-fetch codex-build codex-package codex-repo codex-test github-cli github-cli-check github-cli-fetch github-cli-build github-cli-package github-cli-repo github-cli-test clean
 
 all: nodejs
 
@@ -40,6 +40,28 @@ codex-repo:
 codex-test:
 	$(MAKE) -C ports/codex test
 
+github-cli:
+	$(MAKE) -C ports/github-cli package
+
+github-cli-check:
+	$(MAKE) -C ports/github-cli check
+
+github-cli-fetch:
+	$(MAKE) -C ports/github-cli fetch
+
+github-cli-build:
+	$(MAKE) -C ports/github-cli build
+
+github-cli-package:
+	$(MAKE) -C ports/github-cli package
+
+github-cli-repo:
+	$(MAKE) -C ports/github-cli repo
+
+github-cli-test:
+	$(MAKE) -C ports/github-cli test
+
 clean:
 	$(MAKE) -C ports/nodejs clean
 	$(MAKE) -C ports/codex clean
+	$(MAKE) -C ports/github-cli clean

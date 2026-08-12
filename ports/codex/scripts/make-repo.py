@@ -103,6 +103,35 @@ def main() -> None:
             ]
         )
 
+    github_cli_debs = sorted(pool.glob(f"github-cli-ios_*_{ARCH}.deb"))
+    if github_cli_debs:
+        github_cli_deb = github_cli_debs[-1]
+        prefix = "github-cli-ios_"
+        suffix = f"_{ARCH}.deb"
+        github_cli_version = github_cli_deb.name[len(prefix) : -len(suffix)]
+        package_stanzas.append(
+            [
+                "Package: com.nikovonlas.github-cli-ios",
+                "Name: GitHub CLI for iPadOS",
+                f"Version: {github_cli_version}",
+                f"Architecture: {ARCH}",
+                "Maintainer: NikoVonLas",
+                "Author: GitHub (upstream), NikoVonLas (iPadOS port)",
+                "Section: Development",
+                "Priority: optional",
+                "Depends: firmware (>= 15.0), ca-certificates, git, ldid, openssh-client",
+                "Conflicts: gh, github-cli",
+                "Provides: gh, github-cli",
+                "Replaces: gh, github-cli",
+                "Tag: purpose::console, role::developer",
+                f"Filename: {github_cli_deb.relative_to(REPO).as_posix()}",
+                f"Size: {github_cli_deb.stat().st_size}",
+                f"SHA256: {digest(github_cli_deb, 'sha256')}",
+                "Description: Native rootless iPadOS port of the official GitHub CLI",
+                "Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/github-cli",
+            ]
+        )
+
     package = (
         "\n\n".join("\n".join(stanza) for stanza in package_stanzas) + "\n"
     ).encode()

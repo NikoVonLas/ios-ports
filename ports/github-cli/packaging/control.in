@@ -1,0 +1,15 @@
+Package: com.nikovonlas.github-cli-ios
+Name: GitHub CLI for iPadOS
+Version: @VERSION@
+Architecture: @ARCH@
+Description: Native rootless iPadOS port of the official GitHub CLI
+Maintainer: NikoVonLas
+Author: GitHub (upstream), NikoVonLas (iPadOS port)
+Section: Development
+Priority: optional
+Depends: firmware (>= 15.0), ca-certificates, git, ldid, openssh-client
+Conflicts: gh, github-cli
+Provides: gh, github-cli
+Replaces: gh, github-cli
+Tag: purpose::console, role::developer
+Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/github-cli

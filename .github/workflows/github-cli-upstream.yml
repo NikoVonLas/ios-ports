@@ -1,0 +1,172 @@
+name: Update GitHub CLI for iPadOS
+
+on:
+  schedule:
+    - cron: "37 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Build the latest release even when it is already pinned
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ios-ports-upstream-update
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.release.outputs.changed }}
+      revision: ${{ steps.release.outputs.revision }}
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+      go_toolchain: ${{ steps.release.outputs.go_toolchain }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: release
+        name: Resolve latest stable GitHub CLI release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="$(gh api repos/cli/cli/releases/latest --jq .tag_name)"
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Unexpected GitHub CLI release tag: $tag" >&2
+            exit 1
+          fi
+
+          object="$(gh api "repos/cli/cli/git/ref/tags/$tag")"
+          revision="$(jq -r .object.sha <<<"$object")"
+          object_type="$(jq -r .object.type <<<"$object")"
+          while [ "$object_type" = tag ]; do
+            object="$(gh api "repos/cli/cli/git/tags/$revision")"
+            revision="$(jq -r .object.sha <<<"$object")"
+            object_type="$(jq -r .object.type <<<"$object")"
+          done
+          [ "$object_type" = commit ]
+
+          go_mod="$(gh api "repos/cli/cli/contents/go.mod?ref=$revision" --jq .content | base64 --decode)"
+          grep -qx 'module github.com/cli/cli/v2' <<<"$(head -n 1 <<<"$go_mod")"
+          grep -Eq '^go 1\.[0-9]+(\.[0-9]+)?$' <<<"$go_mod"
+          go_toolchain="$(sed -n 's/^toolchain go//p' <<<"$go_mod")"
+          if [ -z "$go_toolchain" ]; then
+            go_toolchain="$(sed -n 's/^go //p' <<<"$go_mod")"
+          fi
+          [[ "$go_toolchain" =~ ^1\.[0-9]+(\.[0-9]+)?$ ]]
+
+          current="$(sed -n 's/^GH_CLI_LAST_RELEASE=//p' ports/github-cli/config.env)"
+          version="${tag#v}"
+          changed=false
+          if [ "$tag" != "$current" ]; then
+            changed=true
+          fi
+          {
+            echo "changed=$changed"
+            echo "revision=$revision"
+            echo "tag=$tag"
+            echo "version=$version"
+            echo "go_toolchain=$go_toolchain"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: check
+    if: needs.check.outputs.changed == 'true' || github.event.inputs.force == 'true'
+    runs-on: macos-15
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pin the new upstream release
+        run: |
+          python3 ports/github-cli/scripts/update-upstream.py \
+            "${{ needs.check.outputs.tag }}" \
+            "${{ needs.check.outputs.revision }}"
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ needs.check.outputs.go_toolchain }}
+          cache: false
+
+      - name: Prepare signing tool
+        run: |
+          if ! command -v ldid >/dev/null 2>&1; then
+            brew install ldid
+          fi
+
+      - name: Cache Go modules and build objects
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ports/github-cli/.build/go-cache
+          key: github-cli-ios-${{ needs.check.outputs.revision }}-${{ hashFiles('ports/github-cli/scripts/build.sh') }}
+          restore-keys: |
+            github-cli-ios-
+
+      - name: Build and package GitHub CLI
+        run: |
+          make github-cli
+          make github-cli-repo
+          make github-cli-test
+
+      - name: Inspect package contents and binary
+        run: |
+          set -euo pipefail
+          package="$(find ports/github-cli/dist -name '*.deb' -type f -print -quit)"
+          file ports/github-cli/.build/stage/var/jb/usr/bin/gh | grep -F 'Mach-O 64-bit executable arm64'
+          go version -m ports/github-cli/.build/stage/var/jb/usr/bin/gh | grep -F $'build\tGOOS=ios'
+          go version -m ports/github-cli/.build/stage/var/jb/usr/bin/gh | grep -F $'build\tGOARCH=arm64'
+          ldid -e ports/github-cli/.build/stage/var/jb/usr/bin/gh
+          bsdtar -xOf "$package" data.tar.xz | bsdtar -tJf - | \
+            grep -Fx './var/jb/usr/bin/gh'
+          bsdtar -xOf "$package" control.tar.xz | bsdtar -xOJf - ./control | \
+            grep -Fx 'Package: com.nikovonlas.github-cli-ios'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: github-cli-${{ needs.check.outputs.version }}-ios-rootless
+          path: ports/github-cli/dist/*.deb
+          if-no-files-found: error
+          retention-days: 30
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ports/codex/docs
+
+      - name: Commit successful update
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A ports/github-cli ports/codex/docs
+          git add -f ports/codex/docs/debs/github-cli-ios_*.deb
+          if git diff --cached --quiet; then
+            echo "GitHub CLI package and repository metadata are already current."
+          else
+            git commit -m "Update GitHub CLI for iPadOS to $VERSION"
+            git push origin HEAD:main
+          fi
+
+  deploy:
+    needs: build
+    if: always() && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

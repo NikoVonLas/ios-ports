@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+
+ldid -S/var/jb/usr/share/github-cli-ios/entitlements.plist /var/jb/usr/bin/gh
+chmod 0755 /var/jb/usr/bin/gh

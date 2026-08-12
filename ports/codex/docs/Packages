@@ -30,3 +30,22 @@ SHA256: cec0b00c9173ddbb3b5104ff98edb61350b859de246e5fa766dd9e15189573fb
 Description: Node.js 24 LTS and npm for rootless jailbroken iOS
  Native arm64 Node.js runtime packaged below /var/jb for iOS 15 and later.
 Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/nodejs
+
+Package: com.nikovonlas.github-cli-ios
+Name: GitHub CLI for iPadOS
+Version: 2.97.0-1
+Architecture: iphoneos-arm64
+Maintainer: NikoVonLas
+Author: GitHub (upstream), NikoVonLas (iPadOS port)
+Section: Development
+Priority: optional
+Depends: firmware (>= 15.0), ca-certificates, git, ldid, openssh-client
+Conflicts: gh, github-cli
+Provides: gh, github-cli
+Replaces: gh, github-cli
+Tag: purpose::console, role::developer
+Filename: debs/github-cli-ios_2.97.0-1_iphoneos-arm64.deb
+Size: 9446948
+SHA256: 7dd5ce831a3b99daf934d07b87dc266695cf2874461213efd2b28305ec49e77b
+Description: Native rootless iPadOS port of the official GitHub CLI
+Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/github-cli

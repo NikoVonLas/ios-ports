@@ -25,6 +25,7 @@ grep -q 'RUSTY_V8_SRC_BINDING_PATH' ../../.github/workflows/codex-upstream.yml
 grep -q 'src_binding_nocage_release_aarch64-apple-ios.rs' ../../.github/workflows/codex-upstream.yml
 grep -q 'v8_config_hash=' ../../.github/workflows/codex-upstream.yml
 grep -q "needs.build.result == 'success'" ../../.github/workflows/codex-upstream.yml
+grep -q 'git diff --cached --quiet' ../../.github/workflows/codex-upstream.yml
 grep -q 'target_os = "ios"' patches/0003-disable-v8-sandbox-on-ios.patch
 not_ios_line="$(grep -nF '+[target.'\''cfg(not(target_os = "ios"))'\''.dependencies]' patches/0003-disable-v8-sandbox-on-ios.patch | cut -d: -f1)"
 sandbox_line="$(grep -nF 'v8 = { workspace = true, features = ["v8_enable_sandbox"] }' patches/0003-disable-v8-sandbox-on-ios.patch | cut -d: -f1)"

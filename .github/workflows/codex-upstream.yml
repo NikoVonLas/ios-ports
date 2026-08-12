@@ -242,8 +242,12 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A ports/codex
           git add -f ports/codex/docs/debs/*.deb
-          git commit -m "Update Codex for iPadOS to $VERSION"
-          git push origin HEAD:main
+          if git diff --cached --quiet; then
+            echo "Codex package and repository metadata are already current."
+          else
+            git commit -m "Update Codex for iPadOS to $VERSION"
+            git push origin HEAD:main
+          fi
 
   deploy:
     needs: build

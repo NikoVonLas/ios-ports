@@ -1,15 +1,15 @@
 Package: com.nikovonlas.codex-ios
 Name: Codex CLI for iPadOS
-Version: 0.152.0-1
+Version: 0.152.1-1
 Architecture: iphoneos-arm64
 Maintainer: NikoVonLas
 Author: OpenAI (upstream), NikoVonLas (iPadOS port)
 Section: Development
 Priority: optional
 Depends: firmware (>= 15.0), bash, ca-certificates, git, ldid, openssh-client, ripgrep
-Filename: debs/codex-ios_0.152.0-1_iphoneos-arm64.deb
-Size: 67124940
-SHA256: bef20a7777f046bed7fe83e4b3068c0c629050395b76f2be4d06682b55f80759
+Filename: debs/codex-ios_0.152.1-1_iphoneos-arm64.deb
+Size: 67128216
+SHA256: b4b863c42e96d0909e932d4319bf49f05b8d95f2d377dca48bdd06942774fb20
 Description: Experimental rootless iPadOS port of OpenAI Codex CLI
 Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/codex
 

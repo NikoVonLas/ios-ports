@@ -7,5 +7,5 @@ Architectures: iphoneos-arm64
 Components: main
 Description: Developer tool ports for rootless iOS and iPadOS
 SHA256:
- 083400c3f84a50536b717ab7454250b77b306144e8b0aa19302f835974a03e0f             1931 Packages
- 3296e163b0be8f9356eba830da242702c4206969ab90d88d7325552015569336              791 Packages.gz
+ 4320a18db142cafcc818c5ab72e53446e4e1020fe38fefc8efb5874a58a93a0f             1931 Packages
+ 6b923353339b086b40e145f611c25b50e8df1cc1eb807dead8b3376151618b79              793 Packages.gz

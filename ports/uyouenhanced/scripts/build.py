@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 import argparse
-import json
 import os
 from pathlib import Path
 import shutil
 import subprocess
+from configuration import PORT, DYLIB_SUFFIX, LIBRARIES, load_config
 
-PORT = Path(__file__).resolve().parents[1]
-CONFIG = json.loads((PORT / 'config.json').read_text())
+CONFIG = load_config()
 
 def main():
     parser = argparse.ArgumentParser()
@@ -33,13 +32,13 @@ def main():
     subprocess.run(command, cwd=source, env=env, check=True)
     output = PORT / '.build' / args.profile
     output.mkdir(parents=True, exist_ok=True)
-    for name in ('uYouEnhanced', 'YouTubeDislikesReturn'):
-        candidates = list(object_dir.rglob(name + '.dylib'))
+    for name in LIBRARIES:
+        candidates = list(object_dir.rglob(name + DYLIB_SUFFIX))
         if not candidates:
             raise RuntimeError('Missing compiled ' + name)
         # The architecture-specific intermediate is identical before the final strip/sign.
-        candidate = object_dir / (name + '.dylib')
-        shutil.copy2(candidate if candidate.exists() else candidates[0], output / (name + '.dylib'))
+        candidate = object_dir / (name + DYLIB_SUFFIX)
+        shutil.copy2(candidate if candidate.exists() else candidates[0], output / (name + DYLIB_SUFFIX))
 
 if __name__ == '__main__':
     main()

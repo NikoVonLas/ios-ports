@@ -11,8 +11,12 @@ on:
       - '.github/workflows/uyouenhanced.yml'
 permissions:
   contents: read
+concurrency:
+  group: uyouenhanced-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 jobs:
   build:
+    name: YouTube (iOS 12 + iPadOS 17)
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4

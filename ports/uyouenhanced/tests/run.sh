@@ -8,4 +8,5 @@ for test in direct-formats sponsor; do
         -o ".build/tests/$test"
     ".build/tests/$test"
 done
-python3 -m py_compile scripts/fetch.py scripts/build.py scripts/package.py scripts/verify.py
+python3 -m py_compile scripts/*.py
+PYTHONPATH=scripts python3 tests/packaging.py

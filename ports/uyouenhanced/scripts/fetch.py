@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-import json
 from pathlib import Path
 import subprocess
+from configuration import PORT, load_config
 
-PORT = Path(__file__).resolve().parents[1]
-CONFIG = json.loads((PORT / 'config.json').read_text())
+CONFIG = load_config()
 
 def run(*args, cwd=None):
     subprocess.run(args, cwd=cwd, check=True)

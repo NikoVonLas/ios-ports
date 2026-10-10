@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 import argparse
 import hashlib
-import json
 from pathlib import Path
 import plistlib
 import shutil
 import subprocess
 import tempfile
+from configuration import PORT, LIBRARIES, load_config, package_path
 
-PORT = Path(__file__).resolve().parents[1]
-CONFIG = json.loads((PORT / 'config.json').read_text())
+CONFIG = load_config()
 
 def run(*args):
     subprocess.run(args, check=True)
@@ -43,7 +42,7 @@ def main():
             '-change', '/Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate',
             profile['prefix'] + '/Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate', str(base_dylib))
         shutil.copytree(source / 'Localizations/uYouPlus.bundle', resources / 'uYouPlus.bundle')
-    for name in ('uYouEnhanced', 'YouTubeDislikesReturn'):
+    for name in LIBRARIES:
         shutil.copy2(build / (name + '.dylib'), dylibs)
     shutil.copytree(source / 'Tweaks/Return-YouTube-Dislikes/layout/Library/Application Support/RYD.bundle', resources / 'RYD.bundle')
     for dylib in dylibs.glob('*.dylib'):
@@ -69,14 +68,15 @@ Description: Russian offline video library, downloads, SponsorBlock and estimate
     for path in sorted(stage.rglob('*')):
         if path.is_file() and 'DEBIAN' not in path.relative_to(stage).parts:
             path.chmod(0o755 if path.suffix == '.dylib' else 0o644)
-            sums.append(hashlib.md5(path.read_bytes()).hexdigest() + '  ' + str(path.relative_to(stage)))
+            # dpkg's md5sums format requires MD5 for non-security integrity checks.
+            sums.append(hashlib.md5(path.read_bytes(), usedforsecurity=False).hexdigest() + '  ' + str(path.relative_to(stage)))
     metadata.joinpath('md5sums').write_text('\n'.join(sums) + '\n')
     output = PORT / 'dist'
     output.mkdir(exist_ok=True)
-    deb = output / f"uyouenhanced_{CONFIG['version']}_{profile['architecture']}.deb"
+    deb = package_path(CONFIG,args.profile)
     run('dpkg-deb', '-Zgzip', '--root-owner-group', '--build', str(stage), str(deb))
     deb.with_name(deb.name + '.sha256').write_text(hashlib.sha256(deb.read_bytes()).hexdigest() + '  ' + deb.name + '\n')
-    run('python3', str(PORT / 'scripts/verify.py'), args.profile, str(deb))
+    run('python3', str(PORT / 'scripts/verify.py'), args.profile)
     print(deb)
 
 if __name__ == '__main__':

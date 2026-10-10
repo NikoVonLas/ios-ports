@@ -11,7 +11,14 @@ rootless jailbroken arm64 iOS and iPadOS devices.
 | [OpenAI Codex](ports/codex) | Automatically tracked stable release | `codex-ios` | Active |
 | [GitHub CLI](ports/github-cli) | Automatically tracked stable release | `github-cli-ios` | Active |
 
-All ports target rootless arm64 iOS/iPadOS.
+Command-line ports target rootless arm64 iOS/iPadOS.
+
+## YouTube for both iPads
+
+[uYouEnhanced Local](ports/uyouenhanced) restores the existing Russian download
+client with a shared MP4/HLS library, SponsorBlock and Return YouTube Dislike.
+`make uyouenhanced` builds both a rootful iOS 12/A7 DEB and a rootless iPadOS 17/A10
+DEB. A compatible installed YouTube app is required; device validation is pending.
 
 ## Build Node.js
 

@@ -4,6 +4,13 @@ SHELL := /bin/sh
 
 all: nodejs
 
+.PHONY: uyouenhanced uyouenhanced-test
+uyouenhanced:
+	$(MAKE) -C ports/uyouenhanced package
+
+uyouenhanced-test:
+	$(MAKE) -C ports/uyouenhanced test
+
 nodejs:
 	$(MAKE) -C ports/nodejs all
 

@@ -22,6 +22,8 @@ static NSString *UYTPCardID(UIView *cell,CGPoint point) {
     while (queue.count && remaining--) {
         UIView *view=queue.firstObject; [queue removeObjectAtIndex:0];
         if (!CGRectContainsPoint([view convertRect:view.bounds toView:cell],point)) continue;
+        NSString *associated=UYTVideoIDForCard(objc_getAssociatedObject(view,UYTPBoundVideoKey));
+        if (associated) return associated;
         id node=UYTPRead(view,@"keepalive_node") ?: UYTPRead(view,@"node");
         if (node) {
             NSString *identifier=UYTVideoIDForCard(UYTPRead(node,@"element")) ?: UYTVideoIDForCard(UYTPRead(node,@"controller")) ?: UYTVideoIDForCard(node);
@@ -31,6 +33,18 @@ static NSString *UYTPCardID(UIView *cell,CGPoint point) {
     }
     for (NSString *key in @[@"renderer",@"_renderer",@"cellController",@"_cellController"]) {
         NSString *identifier=UYTVideoIDForCard(UYTPRead(cell,key)); if (identifier) return identifier;
+    }
+    static NSUInteger diagnostics=0;
+    if (diagnostics++<3) {
+        NSMutableArray *classes=[NSMutableArray array],*views=[NSMutableArray arrayWithObject:cell]; NSUInteger limit=16;
+        while (views.count && limit--) {
+            UIView *view=views.firstObject; [views removeObjectAtIndex:0];
+            if (!CGRectContainsPoint([view convertRect:view.bounds toView:cell],point)) continue;
+            id node=UYTPRead(view,@"keepalive_node") ?: UYTPRead(view,@"node");
+            [classes addObject:[NSString stringWithFormat:@"%@/node:%@/controller:%@/bound:%@",NSStringFromClass(view.class),NSStringFromClass([node class]),NSStringFromClass([UYTPRead(node,@"controller") class]),NSStringFromClass([objc_getAssociatedObject(view,UYTPBoundVideoKey) class])]];
+            [views addObjectsFromArray:view.subviews];
+        }
+        NSLog(@"[UYTNative] Preview identity path=%@",[classes componentsJoinedByString:@","]);
     }
     return nil;
 }
@@ -80,7 +94,7 @@ static const void *UYTPGestureKey=&UYTPGestureKey;
     UIView *cell=gesture.view;
     if (!cell.window || cell.bounds.size.width<80 || cell.bounds.size.height<45 || !CGRectContainsPoint(UYTPThumbnail(cell),[gesture locationInView:cell])) return NO;
     NSString *identifier=UYTPCardID(cell,[gesture locationInView:cell]);
-    NSLog(@"[UYTNative] Preview card class=%@ target=%@",NSStringFromClass(cell.class),identifier ?: @"missing");
+    NSLog(@"[UYTNative] Preview card class=%@ target=%@ bound=%@",NSStringFromClass(cell.class),identifier ?: @"missing",NSStringFromClass([objc_getAssociatedObject(cell,UYTPBoundVideoKey) class]));
     if (!identifier) return NO; self.cell=cell; self.videoID=identifier; return YES;
 }
 - (void)hold:(UILongPressGestureRecognizer *)gesture {
@@ -221,7 +235,13 @@ static void UYTPBind(id controller,id renderer) {
         if ([cell isKindOfClass:UIView.class]) objc_setAssociatedObject(cell,UYTPBoundVideoKey,renderer,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     } @finally { binding=NO; }
 }
-%hook YTVideoElementCellController
+%hook YTElementsCellController
+- (id)cell {
+    id cell=%orig;
+    id renderer=UYTPRead(self,@"_entry");
+    if ([cell isKindOfClass:UIView.class] && renderer) objc_setAssociatedObject(cell,UYTPBoundVideoKey,renderer,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    return cell;
+}
 - (id)elementEntry {
     id renderer=%orig;
     UYTPBind(self,renderer);
@@ -229,6 +249,12 @@ static void UYTPBind(id controller,id renderer) {
 }
 %end
 %hook YTVideoCellController
+- (id)cell {
+    id cell=%orig;
+    id renderer=UYTPRead(self,@"_entry");
+    if ([cell isKindOfClass:UIView.class] && renderer) objc_setAssociatedObject(cell,UYTPBoundVideoKey,renderer,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    return cell;
+}
 - (id)entry {
     id renderer=%orig;
     UYTPBind(self,renderer);

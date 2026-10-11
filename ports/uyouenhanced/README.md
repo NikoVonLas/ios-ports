@@ -127,7 +127,11 @@ validation of the home restoration is pending. A reported long-video preparation
 failure has not yet been reproduced with its exact AVFoundation code.
 Local22 adds hold-to-preview with audio and Shorts feed filtering. Both profiles
 build and pass package checks; format-selection and Shorts-marker tests pass.
-Gesture/audio behavior and subscription layouts still need device validation.
+The user confirmed Shorts disappeared from subscriptions on local22, but reported
+slower loading and nonworking previews. Logs showed the hold gesture with no video
+identity. Local23 binds generic Elements controllers and their inner card views;
+Shorts checks scan/cache raw component data instead of repeated protobuf descriptions.
+These corrections still need device validation.
 No compatibility with an untested YouTube version is implied by a passing build.
 
 Sources/credit: arichornlover and qnblackcat (uYouEnhanced/uYouPlus), MiRO92 (uYou),

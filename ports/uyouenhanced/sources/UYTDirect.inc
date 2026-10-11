@@ -11,6 +11,16 @@
 - (void)cancel { for (NSURLSessionTask *t in self.members) [t cancel]; }
 @end
 
+static unsigned long long UYTMediaFileSize(NSString *path) {
+    return [[[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil][NSFileSize] unsignedLongLongValue];
+}
+static NSString *UYTMediaError(NSString *message, NSError *error) {
+    if (!error) return message;
+    NSMutableString *text=[NSMutableString stringWithFormat:@"%@ (%@: %ld)",message,error.domain,(long)error.code];
+    NSError *underlying=error.userInfo[NSUnderlyingErrorKey];
+    if (underlying) [text appendFormat:@"; %@: %ld",underlying.domain,(long)underlying.code];
+    return text;
+}
 @implementation UYTOfflineStore (Direct)
 - (NSString *)directDirectory:(NSString *)identifier {
     NSString *dir=[[self indexPath].stringByDeletingLastPathComponent stringByAppendingPathComponent:[@"Files" stringByAppendingPathComponent:identifier]];
@@ -18,6 +28,11 @@
 }
 - (NSMutableDictionary *)directItem:(NSString *)identifier {
     for (NSMutableDictionary *item in self.items) if ([item[@"id"] isEqual:identifier]) return item; return nil;
+}
+- (BOOL)canPrepareItem:(NSDictionary *)item {
+    if (![item[@"kind"] isEqual:@"direct"] || ![item[@"id"] isKindOfClass:NSString.class]) return NO;
+    NSString *directory=[self directDirectory:item[@"id"]];
+    return UYTMediaFileSize([directory stringByAppendingPathComponent:@"audio.m4a"])>0 && UYTMediaFileSize([directory stringByAppendingPathComponent:@"video.mp4"])>0;
 }
 - (void)setupDirectSession {
     self.exports=[NSMutableDictionary dictionary];
@@ -33,6 +48,15 @@
             NSString *dir=[self directDirectory:item[@"id"]];
             if ([[NSFileManager defaultManager] fileExistsAtPath:[dir stringByAppendingPathComponent:@"audio.m4a"]] && [[NSFileManager defaultManager] fileExistsAtPath:[dir stringByAppendingPathComponent:@"video.mp4"]]) { item[@"state"]=@"loading"; [self mergeDirect:item]; }
             else if (!self.tasks[item[@"id"]]) { item[@"state"]=@"failed"; item[@"error"]=@"Загрузка прервана. Скачайте ролик заново через меню."; }
+        }
+        for (NSMutableDictionary *item in self.items) if ([item[@"kind"] isEqual:@"direct"] && [item[@"state"] isEqual:@"failed"]) {
+            NSString *directory=[self directDirectory:item[@"id"]];
+            NSLog(@"[UYTNative] Stored failure target=%@ height=%@ reason=%@ videoBytes=%llu audioBytes=%llu",item[@"videoID"],item[@"height"],item[@"error"],UYTMediaFileSize([directory stringByAppendingPathComponent:@"video.mp4"]),UYTMediaFileSize([directory stringByAppendingPathComponent:@"audio.m4a"]));
+            // One diagnostic recovery of old generic mux failures, retaining inputs.
+            if ([item[@"error"] hasPrefix:@"Не удалось подготовить видео"] && ![item[@"preparationAttemptVersion"] isEqual:@"local16"] && [self canPrepareItem:item]) {
+                item[@"preparationAttemptVersion"]=@"local16";
+                [self mergeDirect:item];
+            }
         }
         [self save];
     }); }];
@@ -103,11 +127,16 @@
     NSString *identifier=item[@"id"]; if (self.exports[identifier] || [item[@"state"] isEqual:@"processing"]) return;
     item[@"state"]=@"processing"; item[@"progress"]=@0.99; [self save];
     NSString *dir=[self directDirectory:identifier];
+    item[@"preparationAttemptVersion"]=@"local16";
+    [item removeObjectForKey:@"error"];
+    NSLog(@"[UYTNative] Preparation start target=%@ videoBytes=%llu audioBytes=%llu",item[@"videoID"],UYTMediaFileSize([dir stringByAppendingPathComponent:@"video.mp4"]),UYTMediaFileSize([dir stringByAppendingPathComponent:@"audio.m4a"]));
     // Load tracks away from the UI thread; large videos can take time to inspect.
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED,0), ^{
         AVURLAsset *video=[AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:[dir stringByAppendingPathComponent:@"video.mp4"]] options:nil];
         AVURLAsset *audio=[AVURLAsset URLAssetWithURL:[NSURL fileURLWithPath:[dir stringByAppendingPathComponent:@"audio.m4a"]] options:nil];
         AVAssetTrack *vt=[video tracksWithMediaType:AVMediaTypeVideo].firstObject,*at=[audio tracksWithMediaType:AVMediaTypeAudio].firstObject;
+        double videoSeconds=CMTimeGetSeconds(vt.timeRange.duration),audioSeconds=CMTimeGetSeconds(at.timeRange.duration);
+        NSLog(@"[UYTNative] Preparation tracks target=%@ videoTrack=%d audioTrack=%d videoSeconds=%.3f audioSeconds=%.3f",item[@"videoID"],vt!=nil,at!=nil,videoSeconds,audioSeconds);
         AVMutableComposition *composition=[AVMutableComposition composition]; NSError *error=nil; BOOL valid=vt && at;
         if (valid) {
             AVMutableCompositionTrack *v=[composition addMutableTrackWithMediaType:AVMediaTypeVideo preferredTrackID:kCMPersistentTrackID_Invalid];
@@ -117,11 +146,12 @@
         }
         dispatch_async(dispatch_get_main_queue(), ^{
             if (![self directItem:identifier] || ![item[@"state"] isEqual:@"processing"]) return;
-            if (!valid) { [self directFailed:item message:@"Не удалось соединить видео со звуком. Повторите скачивание."]; return; }
+            if (!valid) { [self directFailed:item message:UYTMediaError(@"Не удалось соединить видео со звуком.",error)]; return; }
             AVAssetExportSession *export=[[AVAssetExportSession alloc] initWithAsset:composition presetName:AVAssetExportPresetPassthrough];
             if (!export || ![export.supportedFileTypes containsObject:AVFileTypeMPEG4]) { [self directFailed:item message:@"Этот формат видео не поддерживается iPad."]; return; }
             NSURL *output=[NSURL fileURLWithPath:[dir stringByAppendingPathComponent:@"offline.mp4"]]; [[NSFileManager defaultManager] removeItemAtURL:output error:nil];
-            export.outputURL=output; export.outputFileType=AVFileTypeMPEG4; export.shouldOptimizeForNetworkUse=YES; self.exports[identifier]=export;
+            // This file is played locally; do not perform the extra fast-start pass.
+            export.outputURL=output; export.outputFileType=AVFileTypeMPEG4; export.shouldOptimizeForNetworkUse=NO; self.exports[identifier]=export;
             [export exportAsynchronouslyWithCompletionHandler:^{ dispatch_async(dispatch_get_main_queue(), ^{
                 [self.exports removeObjectForKey:identifier]; [self.tasks removeObjectForKey:identifier];
                 if (![self directItem:identifier]) { [[NSFileManager defaultManager] removeItemAtPath:dir error:nil]; return; }
@@ -131,8 +161,12 @@
                     NSString *prefix=[NSHomeDirectory().stringByResolvingSymlinksInPath stringByAppendingString:@"/"]; NSString *path=output.path.stringByResolvingSymlinksInPath;
                     if (![path hasPrefix:prefix]) { [self directFailed:item message:@"Не удалось сохранить путь к видео."]; return; }
                     item[@"location"]=[path substringFromIndex:prefix.length]; item[@"state"]=@"ready"; item[@"progress"]=@1;
+                    if (isfinite(videoSeconds) && videoSeconds>0) item[@"duration"]=@(videoSeconds);
                     [[NSFileManager defaultManager] removeItemAtPath:[dir stringByAppendingPathComponent:@"audio.m4a"] error:nil]; [[NSFileManager defaultManager] removeItemAtPath:[dir stringByAppendingPathComponent:@"video.mp4"] error:nil]; [self save];
-                } else [self directFailed:item message:@"Не удалось подготовить видео для просмотра. Повторите скачивание."];
+                } else {
+                    NSLog(@"[UYTNative] Preparation failed target=%@ exportStatus=%ld outputBytes=%llu code=%@:%ld",item[@"videoID"],(long)export.status,UYTMediaFileSize(output.path),export.error.domain,(long)export.error.code);
+                    [self directFailed:item message:UYTMediaError(@"Не удалось подготовить видео для просмотра. В меню можно повторить подготовку без скачивания.",export.error)];
+                }
                 NSLog(@"[UYTNative] Menu download completed target=%@ videoAndAudio=%d",item[@"videoID"],complete);
             }); }];
         });

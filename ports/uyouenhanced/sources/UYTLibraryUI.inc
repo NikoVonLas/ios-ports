@@ -1,7 +1,27 @@
+static UIImage *UYTLibraryMoreIcon(void) {
+    UIGraphicsImageRenderer *renderer=[[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(24,24)];
+    return [[renderer imageWithActions:^(UIGraphicsImageRendererContext *context){
+        [UIColor.whiteColor setFill];
+        for (NSUInteger i=0;i<3;i++) [[UIBezierPath bezierPathWithOvalInRect:CGRectMake(10.5,4.5+i*6,3,3)] fill];
+    }] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+}
+static NSString *UYTLibraryDuration(double seconds) {
+    if (!isfinite(seconds) || seconds<=0) return @"";
+    NSInteger total=(NSInteger)floor(seconds), hours=total/3600, minutes=(total%3600)/60;
+    return hours?[NSString stringWithFormat:@"%ld:%02ld:%02ld",(long)hours,(long)minutes,(long)(total%60)]:[NSString stringWithFormat:@"%ld:%02ld",(long)minutes,(long)(total%60)];
+}
+static void UYTStyleSearchField(UIView *view) {
+    if ([view isKindOfClass:UITextField.class]) {
+        UITextField *field=(UITextField *)view; field.textColor=UIColor.whiteColor;
+        field.backgroundColor=UYTLibrarySurface(); field.layer.cornerRadius=8; field.clipsToBounds=YES;
+        field.attributedPlaceholder=[[NSAttributedString alloc] initWithString:@"Найти видео" attributes:@{NSForegroundColorAttributeName:UYTLibrarySecondaryText()}];
+    } else for (UIView *child in view.subviews) UYTStyleSearchField(child);
+}
 @interface UYTVideoCell : UICollectionViewCell
 @property(nonatomic,strong) UIImageView *cover;
 @property(nonatomic,strong) UILabel *nameLabel;
 @property(nonatomic,strong) UILabel *statusLabel;
+@property(nonatomic,strong) UILabel *durationLabel;
 @property(nonatomic,strong) UIProgressView *progress;
 @property(nonatomic,strong) UYTLibraryButton *more;
 @property(nonatomic,copy) NSString *representedID;
@@ -10,24 +30,26 @@
 - (instancetype)initWithFrame:(CGRect)frame {
     if ((self = [super initWithFrame:frame])) {
         self.cover = [UIImageView new]; self.cover.contentMode = UIViewContentModeScaleAspectFill;
-        self.cover.clipsToBounds = YES; self.cover.layer.cornerRadius = 12;
-        self.cover.backgroundColor = UYTColor(@"secondarySystemGroupedBackgroundColor");
-        self.nameLabel = [UILabel new]; self.nameLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightSemibold]; self.nameLabel.numberOfLines = 2;
-        self.nameLabel.textColor=UYTColor(@"labelColor");
-        self.statusLabel = [UILabel new]; self.statusLabel.font = [UIFont systemFontOfSize:14]; self.statusLabel.textColor = UIColor.whiteColor; self.statusLabel.textAlignment=NSTextAlignmentCenter; self.statusLabel.layer.cornerRadius=7; self.statusLabel.clipsToBounds=YES;
-        self.more = [[UYTLibraryButton alloc] initWithFrame:CGRectZero]; [self.more setImage:UYTIcon(@"ellipsis") forState:UIControlStateNormal]; self.more.accessibilityLabel = @"Действия с видео";
-        self.progress = [UIProgressView new]; self.progress.trackTintColor = UYTColor(@"tertiarySystemFillColor");
-        for (UIView *v in @[self.cover,self.nameLabel,self.statusLabel,self.more,self.progress]) { v.translatesAutoresizingMaskIntoConstraints = NO; [self.contentView addSubview:v]; }
+        self.cover.clipsToBounds = YES; self.cover.layer.cornerRadius = 8;
+        self.cover.backgroundColor = UYTLibrarySurface();
+        self.nameLabel = [UILabel new]; self.nameLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium]; self.nameLabel.numberOfLines = 2;
+        self.nameLabel.textColor=UIColor.whiteColor;
+        self.statusLabel = [UILabel new]; self.statusLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium]; self.statusLabel.textColor = UIColor.whiteColor; self.statusLabel.textAlignment=NSTextAlignmentCenter; self.statusLabel.layer.cornerRadius=4; self.statusLabel.clipsToBounds=YES; self.statusLabel.hidden=YES;
+        self.durationLabel=[UILabel new]; self.durationLabel.font=[UIFont monospacedDigitSystemFontOfSize:12 weight:UIFontWeightSemibold]; self.durationLabel.textColor=UIColor.whiteColor; self.durationLabel.backgroundColor=[UIColor colorWithWhite:0 alpha:0.8]; self.durationLabel.textAlignment=NSTextAlignmentCenter; self.durationLabel.layer.cornerRadius=4; self.durationLabel.clipsToBounds=YES;
+        self.more = [[UYTLibraryButton alloc] initWithFrame:CGRectZero]; [self.more setImage:UYTLibraryMoreIcon() forState:UIControlStateNormal]; self.more.accessibilityLabel = @"Действия с видео";
+        self.progress = [UIProgressView new]; self.progress.trackTintColor = [UIColor colorWithWhite:1 alpha:0.2]; self.progress.progressTintColor=UYTLibraryAccent();
+        for (UIView *v in @[self.cover,self.nameLabel,self.statusLabel,self.durationLabel,self.more,self.progress]) { v.translatesAutoresizingMaskIntoConstraints = NO; [self.contentView addSubview:v]; }
         [NSLayoutConstraint activateConstraints:@[
             [self.cover.topAnchor constraintEqualToAnchor:self.contentView.topAnchor], [self.cover.leadingAnchor constraintEqualToAnchor:self.contentView.leadingAnchor], [self.cover.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor], [self.cover.heightAnchor constraintEqualToAnchor:self.cover.widthAnchor multiplier:9.0/16.0],
-            [self.nameLabel.topAnchor constraintEqualToAnchor:self.cover.bottomAnchor constant:10], [self.nameLabel.leadingAnchor constraintEqualToAnchor:self.contentView.leadingAnchor], [self.nameLabel.trailingAnchor constraintEqualToAnchor:self.more.leadingAnchor constant:-4],
-            [self.more.topAnchor constraintEqualToAnchor:self.cover.bottomAnchor constant:4], [self.more.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor constant:4], [self.more.widthAnchor constraintEqualToConstant:44], [self.more.heightAnchor constraintEqualToConstant:44],
+            [self.nameLabel.topAnchor constraintEqualToAnchor:self.cover.bottomAnchor constant:8], [self.nameLabel.leadingAnchor constraintEqualToAnchor:self.contentView.leadingAnchor], [self.nameLabel.trailingAnchor constraintEqualToAnchor:self.more.leadingAnchor constant:-4],
+            [self.more.topAnchor constraintEqualToAnchor:self.cover.bottomAnchor], [self.more.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor], [self.more.widthAnchor constraintEqualToConstant:44], [self.more.heightAnchor constraintEqualToConstant:44],
             [self.statusLabel.leadingAnchor constraintEqualToAnchor:self.cover.leadingAnchor constant:10], [self.statusLabel.trailingAnchor constraintEqualToAnchor:self.cover.trailingAnchor constant:-10], [self.statusLabel.topAnchor constraintEqualToAnchor:self.cover.topAnchor constant:10], [self.statusLabel.heightAnchor constraintEqualToConstant:28],
-            [self.progress.leadingAnchor constraintEqualToAnchor:self.contentView.leadingAnchor], [self.progress.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor], [self.progress.bottomAnchor constraintEqualToAnchor:self.cover.bottomAnchor constant:-2], [self.progress.heightAnchor constraintEqualToConstant:4]
+            [self.durationLabel.trailingAnchor constraintEqualToAnchor:self.cover.trailingAnchor constant:-8], [self.durationLabel.bottomAnchor constraintEqualToAnchor:self.cover.bottomAnchor constant:-8], [self.durationLabel.heightAnchor constraintEqualToConstant:20], [self.durationLabel.widthAnchor constraintGreaterThanOrEqualToConstant:44],
+            [self.progress.leadingAnchor constraintEqualToAnchor:self.contentView.leadingAnchor], [self.progress.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor], [self.progress.bottomAnchor constraintEqualToAnchor:self.cover.bottomAnchor], [self.progress.heightAnchor constraintEqualToConstant:3]
         ]];
     } return self;
 }
-- (void)prepareForReuse { [super prepareForReuse]; self.cover.image = nil; self.representedID = nil; self.more.actions = nil; }
+- (void)prepareForReuse { [super prepareForReuse]; self.cover.image = nil; self.representedID = nil; self.more.actions = nil; self.statusLabel.hidden=YES; self.durationLabel.hidden=YES; self.durationLabel.text=nil; self.progress.hidden=YES; }
 @end
 
 static NSString *UYTThumbnailPath(NSString *videoID) {
@@ -37,69 +59,85 @@ static NSString *UYTThumbnailPath(NSString *videoID) {
     return [dir stringByAppendingPathComponent:[videoID stringByAppendingPathExtension:@"jpg"]];
 }
 
+static NSUInteger UYTCoverCost(UIImage *image) { return (NSUInteger)(image.size.width*image.scale*image.size.height*image.scale*4); }
+static void UYTFetchCover(NSString *videoID, NSUInteger variant, void (^completion)(UIImage *, NSData *)) {
+    NSArray *names=@[@"maxresdefault",@"sddefault",@"hqdefault",@"mqdefault"];
+    if (variant>=names.count) { completion(nil,nil); return; }
+    NSURL *url=[NSURL URLWithString:[NSString stringWithFormat:@"https://i.ytimg.com/vi/%@/%@.jpg",videoID,names[variant]]];
+    NSMutableURLRequest *request=[NSMutableURLRequest requestWithURL:url]; request.timeoutInterval=12;
+    [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data,NSURLResponse *response,NSError *error){
+        UIImage *image=(!error && [(NSHTTPURLResponse *)response statusCode]==200 && data.length<=4*1024*1024)?[UIImage imageWithData:data]:nil;
+        CGFloat width=image.size.width*image.scale;
+        // Missing resolutions may return a small placeholder instead of HTTP 404.
+        if (image && width>=(variant==3?160:480) && width<=4096) completion(image,data);
+        else if (error) completion(nil,nil);
+        else UYTFetchCover(videoID,variant+1,completion);
+    }] resume];
+}
+
 @implementation UYTOfflineVC
 - (void)viewDidLoad {
-    [super viewDidLoad]; self.view.backgroundColor = UYTColor(@"systemGroupedBackgroundColor");
-    self.title = @"Сохранённое"; self.visibleItems = @[]; self.coverRequests = [NSMutableSet set]; self.coverCache = [NSCache new];
-    self.coverCache.countLimit = 80;
+    [super viewDidLoad]; self.view.backgroundColor = UYTLibraryBackground(); self.view.tintColor=UIColor.whiteColor;
+    if (@available(iOS 13.0, *)) self.overrideUserInterfaceStyle=UIUserInterfaceStyleDark;
+    self.title = @"Сохранённое"; self.visibleItems = @[]; self.coverRequests = [NSMutableSet set]; self.durationRequests=[NSMutableSet set]; self.coverCache = [NSCache new];
+    self.coverCache.countLimit = 40; self.coverCache.totalCostLimit=24*1024*1024;
     UILabel *title = [UILabel new]; title.text = @"Сохранённое";
-    title.textColor=UYTColor(@"labelColor");
-    title.font = [UIFont systemFontOfSize:32 weight:UIFontWeightBold];
-    self.summaryLabel = [UILabel new]; self.summaryLabel.font = [UIFont systemFontOfSize:15]; self.summaryLabel.textColor = UYTColor(@"secondaryLabelColor");
-    UIButton *help = [UIButton buttonWithType:UIButtonTypeSystem];
-    [help setTitle:@"Как скачать" forState:UIControlStateNormal]; [help setImage:UYTIcon(@"arrow.down.circle") forState:UIControlStateNormal];
-    [help addTarget:self action:@selector(showHelp) forControlEvents:UIControlEventTouchUpInside];
-    UIButton *download=[UIButton buttonWithType:UIButtonTypeSystem]; [download setTitle:@"Скачать" forState:UIControlStateNormal];
-    [download addTarget:self action:@selector(downloadLink) forControlEvents:UIControlEventTouchUpInside];
+    title.textColor=UIColor.whiteColor;
+    title.font = [UIFont systemFontOfSize:24 weight:UIFontWeightBold];
+    self.summaryLabel = [UILabel new]; self.summaryLabel.font = [UIFont systemFontOfSize:14]; self.summaryLabel.textColor = [UIColor colorWithRed:1 green:0.55 blue:0.55 alpha:1]; self.summaryLabel.hidden=YES;
     UIButton *options=[UIButton buttonWithType:UIButtonTypeSystem]; [options setImage:UYTIcon(@"gearshape") forState:UIControlStateNormal]; options.accessibilityLabel=@"Настройки SponsorBlock и дизлайков";
     [options addTarget:self action:@selector(showOptions) forControlEvents:UIControlEventTouchUpInside];
     [options.widthAnchor constraintEqualToConstant:44].active=YES;
-    UIStackView *heading = [[UIStackView alloc] initWithArrangedSubviews:@[title,download,help,options]]; heading.alignment = UIStackViewAlignmentCenter; heading.spacing = 12;
-    [help setContentHuggingPriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
+    UIStackView *heading = [[UIStackView alloc] initWithArrangedSubviews:@[title,options]]; heading.alignment = UIStackViewAlignmentCenter; heading.spacing = 12;
+    [options.heightAnchor constraintEqualToConstant:44].active=YES;
+    options.tintColor=UIColor.whiteColor;
     self.search = [UISearchBar new]; self.search.placeholder = @"Найти видео"; self.search.searchBarStyle = UISearchBarStyleMinimal; self.search.delegate = self; self.search.autocapitalizationType = UITextAutocapitalizationTypeNone;
-    self.filters = [[UISegmentedControl alloc] initWithItems:@[@"Все",@"Скачанные",@"Загружаются"]]; self.filters.selectedSegmentIndex = 0;
-    if (@available(iOS 13.0, *)) {} else { self.filters.tintColor=UIColor.whiteColor; }
-    [self.filters addTarget:self action:@selector(refresh) forControlEvents:UIControlEventValueChanged];
+    self.search.barStyle=UIBarStyleBlack; self.search.tintColor=UIColor.whiteColor; self.search.backgroundImage=[UIImage new];
+    [self.search.heightAnchor constraintEqualToConstant:44].active=YES;
+    NSMutableArray *chips=[NSMutableArray array];
+    for (NSString *text in @[@"Все",@"Скачанные",@"Загружаются"]) {
+        UIButton *chip=[UIButton buttonWithType:UIButtonTypeSystem]; chip.tag=chips.count;
+        [chip setTitle:text forState:UIControlStateNormal]; chip.titleLabel.font=[UIFont systemFontOfSize:14 weight:UIFontWeightMedium]; chip.layer.cornerRadius=8; chip.contentEdgeInsets=UIEdgeInsetsMake(0,12,0,12);
+        [chip addTarget:self action:@selector(selectFilter:) forControlEvents:UIControlEventTouchUpInside];
+        [chip setContentHuggingPriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
+        [chips addObject:chip];
+    }
+    self.filterButtons=chips; self.selectedFilter=0;
+    UIStackView *filters=[[UIStackView alloc] initWithArrangedSubviews:chips]; filters.spacing=8; filters.translatesAutoresizingMaskIntoConstraints=NO;
+    UIScrollView *filterScroll=[UIScrollView new]; filterScroll.showsHorizontalScrollIndicator=NO; [filterScroll addSubview:filters];
+    [NSLayoutConstraint activateConstraints:@[
+        [filterScroll.heightAnchor constraintEqualToConstant:44],
+        [filters.leadingAnchor constraintEqualToAnchor:filterScroll.contentLayoutGuide.leadingAnchor], [filters.trailingAnchor constraintEqualToAnchor:filterScroll.contentLayoutGuide.trailingAnchor],
+        [filters.topAnchor constraintEqualToAnchor:filterScroll.contentLayoutGuide.topAnchor constant:4], [filters.bottomAnchor constraintEqualToAnchor:filterScroll.contentLayoutGuide.bottomAnchor constant:-4], [filterScroll.contentLayoutGuide.heightAnchor constraintEqualToAnchor:filterScroll.frameLayoutGuide.heightAnchor]
+    ]];
     UYTLibraryButton *sort = [[UYTLibraryButton alloc] initWithFrame:CGRectZero]; [sort setImage:UYTIcon(@"arrow.up.arrow.down") forState:UIControlStateNormal]; sort.accessibilityLabel = @"Сортировка";
     __weak UYTOfflineVC *weakSelf = self;
     sort.actions = @[
         [UYTLibraryAction actionWithTitle:@"Сначала новые" image:nil identifier:nil handler:^(UYTLibraryAction *a){ weakSelf.sortByTitle = NO; [weakSelf refresh]; }],
         [UYTLibraryAction actionWithTitle:@"По названию" image:nil identifier:nil handler:^(UYTLibraryAction *a){ weakSelf.sortByTitle = YES; [weakSelf refresh]; }]];
-    UIStackView *filterRow = [[UIStackView alloc] initWithArrangedSubviews:@[self.filters,sort]]; filterRow.spacing = 12; [sort.widthAnchor constraintEqualToConstant:44].active = YES;
-    UIStackView *header = [[UIStackView alloc] initWithArrangedSubviews:@[heading,self.summaryLabel,self.search,filterRow]]; header.axis = UILayoutConstraintAxisVertical; header.spacing = 10;
-    UICollectionViewFlowLayout *layout = [UICollectionViewFlowLayout new]; layout.minimumInteritemSpacing = 20; layout.minimumLineSpacing = 24;
+    UIStackView *filterRow = [[UIStackView alloc] initWithArrangedSubviews:@[filterScroll,sort]]; filterRow.spacing = 12; [sort.widthAnchor constraintEqualToConstant:44].active = YES;
+    UIStackView *header = [[UIStackView alloc] initWithArrangedSubviews:@[heading,self.summaryLabel,self.search,filterRow]]; header.axis = UILayoutConstraintAxisVertical; header.spacing = 8;
+    UICollectionViewFlowLayout *layout = [UICollectionViewFlowLayout new]; layout.minimumInteritemSpacing = 16; layout.minimumLineSpacing = 16;
     self.grid = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:layout]; self.grid.backgroundColor = UIColor.clearColor; self.grid.dataSource = self; self.grid.delegate = self; self.grid.alwaysBounceVertical = YES; self.grid.keyboardDismissMode = UIScrollViewKeyboardDismissModeOnDrag;
     [self.grid registerClass:UYTVideoCell.class forCellWithReuseIdentifier:@"video"];
     header.translatesAutoresizingMaskIntoConstraints = NO; self.grid.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:header]; [self.view addSubview:self.grid];
     [NSLayoutConstraint activateConstraints:@[
-        [header.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:18], [header.leadingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.leadingAnchor constant:24], [header.trailingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.trailingAnchor constant:-24],
-        [self.grid.topAnchor constraintEqualToAnchor:header.bottomAnchor constant:22], [self.grid.leadingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.leadingAnchor constant:24], [self.grid.trailingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.trailingAnchor constant:-24], [self.grid.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor]
+        [header.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:8], [header.leadingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.leadingAnchor constant:16], [header.trailingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.trailingAnchor constant:-16],
+        [self.grid.topAnchor constraintEqualToAnchor:header.bottomAnchor constant:12], [self.grid.leadingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.leadingAnchor constant:16], [self.grid.trailingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.trailingAnchor constant:-16], [self.grid.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor]
     ]];
     if (self.modalLibrary) self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Готово" style:UIBarButtonItemStyleDone target:self action:@selector(close)];
+    if (self.modalLibrary) { self.navigationController.navigationBar.tintColor=UIColor.whiteColor; self.navigationController.navigationBar.barStyle=UIBarStyleBlack; self.navigationController.navigationBar.barTintColor=UYTLibraryBackground(); }
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refresh) name:UYTOfflineChanged object:nil];
     [self refresh];
 }
 - (void)dealloc { [[NSNotificationCenter defaultCenter] removeObserver:self]; }
-- (void)viewDidLayoutSubviews { [super viewDidLayoutSubviews]; if (fabs(self.lastWidth-self.grid.bounds.size.width)>1) { self.lastWidth=self.grid.bounds.size.width; [self.grid.collectionViewLayout invalidateLayout]; } }
+- (void)viewDidLayoutSubviews { [super viewDidLayoutSubviews]; UYTStyleSearchField(self.search); if (fabs(self.lastWidth-self.grid.bounds.size.width)>1) { self.lastWidth=self.grid.bounds.size.width; [self.grid.collectionViewLayout invalidateLayout]; } }
 - (void)close { [self dismissViewControllerAnimated:YES completion:nil]; }
-- (void)showHelp {
-    UIAlertController *a = [UIAlertController alertControllerWithTitle:@"Сохранить видео в дорогу" message:@"Нажмите многоточие рядом с роликом → «Скачать видео». Также можно скачать кнопкой uYou в плеере. Выберите качество и дождитесь статуса «Скачано».\n\nДля просмотра без интернета откройте эту вкладку и нажмите на обложку." preferredStyle:UIAlertControllerStyleAlert];
-    [a addAction:[UIAlertAction actionWithTitle:@"Понятно" style:UIAlertActionStyleDefault handler:nil]]; [self presentViewController:a animated:YES completion:nil];
-}
-- (void)downloadLink {
-    UIAlertController *alert=[UIAlertController alertControllerWithTitle:@"Скачать по ссылке" message:@"Вставьте ссылку на ролик YouTube." preferredStyle:UIAlertControllerStyleAlert];
-    [alert addTextFieldWithConfigurationHandler:^(UITextField *field){ field.placeholder=@"https://youtu.be/…"; field.keyboardType=UIKeyboardTypeURL; field.autocapitalizationType=UITextAutocapitalizationTypeNone; field.autocorrectionType=UITextAutocorrectionTypeNo; }];
-    [alert addAction:[UIAlertAction actionWithTitle:@"Отмена" style:UIAlertActionStyleCancel handler:nil]];
-    [alert addAction:[UIAlertAction actionWithTitle:@"Выбрать качество" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){
-        NSString *input=[alert.textFields.firstObject.text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
-        NSString *videoID=UYTVideoIDFromInput(input);
-        dispatch_async(dispatch_get_main_queue(), ^{ UYTDownloadFromMenu(videoID,self); });
-    }]];
-    [self presentViewController:alert animated:YES completion:nil];
-}
 - (void)showOptions {
     UIAlertController *sheet=[UIAlertController alertControllerWithTitle:@"SponsorBlock и дизлайки" message:@"SponsorBlock пропускает спонсорские вставки. Дизлайки — оценка Return YouTube Dislike, а не точная статистика YouTube." preferredStyle:UIAlertControllerStyleActionSheet];
+    sheet.view.tintColor=UIColor.whiteColor;
+    if (@available(iOS 13.0, *)) sheet.overrideUserInterfaceStyle=UIUserInterfaceStyleDark;
     BOOL sponsor=UYTSponsorEnabled();
     [sheet addAction:[UIAlertAction actionWithTitle:sponsor?@"Выключить SponsorBlock":@"Включить SponsorBlock" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){ [NSUserDefaults.standardUserDefaults setBool:!sponsor forKey:@"UYT.sponsor.enabled"]; }]];
     id ryd=[NSUserDefaults.standardUserDefaults objectForKey:@"RYD-ENABLED"];
@@ -110,60 +148,93 @@ static NSString *UYTThumbnailPath(NSString *videoID) {
     sheet.popoverPresentationController.sourceRect=CGRectMake(CGRectGetMidX(self.view.bounds),40,1,1);
     [self presentViewController:sheet animated:YES completion:nil];
 }
+- (void)selectFilter:(UIButton *)sender { self.selectedFilter=sender.tag; [self refresh]; }
 - (void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)text { [self refresh]; }
 - (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar { [searchBar resignFirstResponder]; }
 - (void)refresh {
-    NSArray *all = [UYTOfflineStore shared].items; NSMutableArray *filtered = [NSMutableArray array]; NSInteger ready=0,loading=0,failed=0;
+    NSArray *all = [UYTOfflineStore shared].items; NSMutableArray *filtered = [NSMutableArray array]; NSInteger failed=0;
+    for (UIButton *chip in self.filterButtons) {
+        BOOL selected=chip.tag==self.selectedFilter; chip.selected=selected; chip.accessibilityTraits=UIAccessibilityTraitButton|(selected?UIAccessibilityTraitSelected:0);
+        chip.backgroundColor=selected?UIColor.whiteColor:UYTLibrarySurface();
+        [chip setTitleColor:selected?UYTLibraryBackground():UIColor.whiteColor forState:UIControlStateNormal];
+        [chip setTitleColor:UYTLibraryBackground() forState:UIControlStateSelected];
+    }
     NSString *query = [self.search.text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
     for (NSDictionary *item in all) {
         NSString *state = item[@"state"]; BOOL downloaded = [state isEqual:@"ready"]; BOOL active = [state isEqual:@"loading"] || [state isEqual:@"paused"] || [state isEqual:@"processing"];
-        ready += downloaded; loading += active; failed += [state isEqual:@"failed"];
-        if (self.filters.selectedSegmentIndex==1 && !downloaded) continue;
-        if (self.filters.selectedSegmentIndex==2 && !active) continue;
+        failed += [state isEqual:@"failed"];
+        if (self.selectedFilter==1 && !downloaded) continue;
+        if (self.selectedFilter==2 && !active) continue;
         if (query.length && [item[@"title"] rangeOfString:query options:NSCaseInsensitiveSearch|NSDiacriticInsensitiveSearch].location==NSNotFound) continue;
         [filtered addObject:item];
     }
     if (self.sortByTitle) [filtered sortUsingComparator:^NSComparisonResult(NSDictionary *a,NSDictionary *b){ return [a[@"title"] localizedStandardCompare:b[@"title"]]; }];
     self.visibleItems = filtered;
-    self.summaryLabel.text = failed ? [NSString stringWithFormat:@"Скачано: %ld · Загружается: %ld · Ошибки: %ld",(long)ready,(long)loading,(long)failed] : loading ? [NSString stringWithFormat:@"Скачано: %ld   Загружается: %ld",(long)ready,(long)loading] : ready ? @"Сохранённые видео доступны без интернета" : @"Соберите свою библиотеку для дороги";
+    self.summaryLabel.hidden=failed==0;
+    self.summaryLabel.text=failed?[NSString stringWithFormat:@"Не удалось скачать: %ld. Подробности в меню ролика.",(long)failed]:nil;
     if (!filtered.count) {
-        UILabel *empty = [UILabel new]; empty.numberOfLines=0; empty.textAlignment=NSTextAlignmentCenter; empty.textColor=UYTColor(@"secondaryLabelColor"); empty.font=[UIFont systemFontOfSize:18];
-        empty.text = query.length ? @"Ничего не найдено\nПопробуйте другое название" : self.filters.selectedSegmentIndex==2 ? @"Сейчас ничего не загружается" : @"Здесь будут ваши видео\nНажмите многоточие у ролика → «Скачать видео»";
+        UILabel *empty = [UILabel new]; empty.numberOfLines=0; empty.textAlignment=NSTextAlignmentCenter; empty.textColor=UYTLibrarySecondaryText(); empty.font=[UIFont systemFontOfSize:18];
+        empty.text = query.length ? @"Ничего не найдено\nПопробуйте другое название" : self.selectedFilter==2 ? @"Сейчас ничего не загружается" : @"Здесь будут ваши видео\nСкачайте ролик стрелкой в плеере";
         self.grid.backgroundView=empty;
     } else self.grid.backgroundView=nil;
     [self.grid reloadData];
 }
 - (NSInteger)collectionView:(UICollectionView *)view numberOfItemsInSection:(NSInteger)section { return self.visibleItems.count; }
 - (CGSize)collectionView:(UICollectionView *)view layout:(UICollectionViewLayout *)layout sizeForItemAtIndexPath:(NSIndexPath *)index {
-    CGFloat width=view.bounds.size.width; NSInteger columns=width>=900?3:width>=560?2:1; CGFloat cellWidth=floor((width-20*(columns-1))/columns); return CGSizeMake(cellWidth,cellWidth*9/16+95);
+    CGFloat width=view.bounds.size.width; NSInteger columns=width>=900?3:width>=560?2:1; CGFloat cellWidth=floor((width-16*(columns-1))/columns); return CGSizeMake(cellWidth,cellWidth*9/16+64);
 }
 - (void)loadCover:(NSDictionary *)item intoCell:(UYTVideoCell *)cell {
     NSString *videoID=item[@"videoID"]; NSString *path=UYTThumbnailPath(videoID);
-    cell.cover.tintColor=UYTColor(@"tertiaryLabelColor");
-    UIImage *cached = videoID ? [self.coverCache objectForKey:videoID] : nil;
-    if (!cached && path) { cached=[UIImage imageWithContentsOfFile:path]; if (cached) [self.coverCache setObject:cached forKey:videoID]; }
-    cell.cover.image=cached ?: UYTIcon(@"play.rectangle");
+    cell.cover.tintColor=UYTLibrarySecondaryText();
+    UIImage *cached=videoID?[self.coverCache objectForKey:videoID]:nil;
+    if (!cached && path) { cached=[UIImage imageWithContentsOfFile:path]; if (cached) [self.coverCache setObject:cached forKey:videoID cost:UYTCoverCost(cached)]; }
+    cell.cover.image=cached?:UYTIcon(@"play.rectangle");
     cell.cover.contentMode=cached?UIViewContentModeScaleAspectFill:UIViewContentModeCenter;
-    if (cached || !path || [self.coverRequests containsObject:videoID]) return;
+    if ((cached && cached.size.width*cached.scale>=640) || !path || [self.coverRequests containsObject:videoID]) return;
     [self.coverRequests addObject:videoID];
-    NSURL *url=[NSURL URLWithString:[NSString stringWithFormat:@"https://i.ytimg.com/vi/%@/mqdefault.jpg",videoID]];
     __weak UYTOfflineVC *weakSelf=self;
-    [[[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData *data,NSURLResponse *response,NSError *error){
-        if (error || [(NSHTTPURLResponse *)response statusCode]!=200 || data.length>2*1024*1024) return;
-        UIImage *image=[UIImage imageWithData:data]; if (!image) return;
-        [data writeToFile:path atomically:YES];
+    CGFloat cachedWidth=cached.size.width*cached.scale;
+    UYTFetchCover(videoID,0,^(UIImage *image,NSData *data){
+        if (!image || image.size.width*image.scale<cachedWidth) return;
+        [data writeToFile:path options:NSDataWritingAtomic error:nil];
         dispatch_async(dispatch_get_main_queue(), ^{
-            [weakSelf.coverCache setObject:image forKey:videoID];
+            [weakSelf.coverCache setObject:image forKey:videoID cost:UYTCoverCost(image)];
             for (UYTVideoCell *visible in weakSelf.grid.visibleCells) if ([visible.representedID isEqual:videoID]) { visible.cover.image=image; visible.cover.contentMode=UIViewContentModeScaleAspectFill; }
         });
-    }] resume];
+    });
+}
+- (void)loadDuration:(NSDictionary *)item intoCell:(UYTVideoCell *)cell {
+    NSString *text=UYTLibraryDuration([item[@"duration"] doubleValue]);
+    cell.durationLabel.text=text; cell.durationLabel.hidden=!text.length;
+    NSString *identifier=item[@"id"], *videoID=item[@"videoID"];
+    if (text.length || ![item[@"state"] isEqual:@"ready"] || !identifier || [self.durationRequests containsObject:identifier]) return;
+    NSURL *url=[UYTOfflineStore.shared localURL:item]; if (!url) return;
+    [self.durationRequests addObject:identifier];
+    static dispatch_queue_t queue; static dispatch_once_t once;
+    dispatch_once(&once, ^{ queue=dispatch_queue_create("com.nikovonlas.uyt.library-metadata",DISPATCH_QUEUE_SERIAL); });
+    __weak UYTOfflineVC *weakSelf=self;
+    dispatch_async(queue, ^{
+        @autoreleasepool {
+            AVURLAsset *asset=[AVURLAsset URLAssetWithURL:url options:@{AVURLAssetPreferPreciseDurationAndTimingKey:@NO}];
+            double seconds=CMTimeGetSeconds(asset.duration); if (!isfinite(seconds) || seconds<=0) return;
+            dispatch_async(dispatch_get_main_queue(), ^{
+                NSMutableDictionary *current=[UYTOfflineStore.shared directItem:identifier]; if (!current) return;
+                current[@"duration"]=@(seconds); [UYTOfflineStore.shared save];
+                for (UYTVideoCell *visible in weakSelf.grid.visibleCells) if ([visible.representedID isEqual:videoID]) { visible.durationLabel.text=UYTLibraryDuration(seconds); visible.durationLabel.hidden=NO; }
+            });
+        }
+    });
 }
 - (UICollectionViewCell *)collectionView:(UICollectionView *)view cellForItemAtIndexPath:(NSIndexPath *)index {
     UYTVideoCell *cell=[view dequeueReusableCellWithReuseIdentifier:@"video" forIndexPath:index]; NSDictionary *item=self.visibleItems[index.item]; NSString *state=item[@"state"];
     cell.representedID=item[@"videoID"]; cell.nameLabel.text=item[@"title"];
     BOOL active=[state isEqual:@"loading"] || [state isEqual:@"paused"] || [state isEqual:@"processing"];
-    cell.statusLabel.text=[state isEqual:@"ready"]?@"Скачано · можно смотреть":[state isEqual:@"processing"]?@"Подготовка видео со звуком":[state isEqual:@"paused"]?@"На паузе":[state isEqual:@"loading"]?[NSString stringWithFormat:@"Скачивается: %.0f%%",[item[@"progress"] doubleValue]*100]:@"Не скачалось · откройте меню";
-    cell.progress.hidden=!active; cell.progress.progress=[item[@"progress"] floatValue]; cell.statusLabel.textColor=UIColor.whiteColor; cell.statusLabel.backgroundColor=[([state isEqual:@"ready"]?UIColor.systemGreenColor:[state isEqual:@"failed"]?UIColor.systemRedColor:UIColor.systemBlueColor) colorWithAlphaComponent:0.92];
+    BOOL failed=[state isEqual:@"failed"];
+    cell.statusLabel.hidden=!failed; cell.statusLabel.text=failed?@"Не удалось скачать":nil;
+    cell.statusLabel.backgroundColor=[UIColor colorWithRed:0.5 green:0.12 blue:0.15 alpha:0.95];
+    cell.progress.hidden=!active; cell.progress.progress=[item[@"progress"] floatValue];
+    cell.progress.progressTintColor=[state isEqual:@"paused"]?UYTLibrarySecondaryText():UYTLibraryAccent();
+    [self loadDuration:item intoCell:cell];
     [self loadCover:item intoCell:cell];
     NSMutableArray *actions=[NSMutableArray array]; __weak UYTOfflineVC *weakSelf=self;
     if (active && ![state isEqual:@"processing"]) [actions addObject:[UYTLibraryAction actionWithTitle:[state isEqual:@"paused"]?@"Продолжить загрузку":@"Приостановить" image:nil identifier:nil handler:^(UYTLibraryAction *a){
@@ -175,8 +246,10 @@ static NSString *UYTThumbnailPath(NSString *videoID) {
         [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://www.youtube.com/watch?v=%@",videoID]] options:@{} completionHandler:nil];
     }]];
     if ([state isEqual:@"failed"]) [actions addObject:[UYTLibraryAction actionWithTitle:@"Повторить скачивание" image:UYTIcon(@"arrow.clockwise") identifier:nil handler:^(UYTLibraryAction *a){ UYTDownloadFromMenu(item[@"videoID"],weakSelf); }]];
+    if ([state isEqual:@"failed"] && [UYTOfflineStore.shared canPrepareItem:item]) [actions insertObject:[UYTLibraryAction actionWithTitle:@"Повторить подготовку" image:nil identifier:nil handler:^(UYTLibraryAction *a){ [UYTOfflineStore.shared mergeDirect:(NSMutableDictionary *)item]; }] atIndex:0];
     if ([state isEqual:@"failed"]) [actions addObject:[UYTLibraryAction actionWithTitle:@"Почему не скачалось" image:UYTIcon(@"info.circle") identifier:nil handler:^(UYTLibraryAction *a){
         UIAlertController *alert=[UIAlertController alertControllerWithTitle:@"Загрузка не завершена" message:item[@"error"] preferredStyle:UIAlertControllerStyleAlert];
+        alert.view.tintColor=UIColor.whiteColor;
         [alert addAction:[UIAlertAction actionWithTitle:@"Понятно" style:UIAlertActionStyleDefault handler:nil]]; [weakSelf presentViewController:alert animated:YES completion:nil];
     }]];
     UYTLibraryAction *remove=[UYTLibraryAction actionWithTitle:active?@"Отменить и удалить":@"Удалить с iPad" image:UYTIcon(@"trash") identifier:nil handler:^(UYTLibraryAction *a){ [weakSelf deleteItem:item]; }]; remove.destructive=YES; [actions addObject:remove];

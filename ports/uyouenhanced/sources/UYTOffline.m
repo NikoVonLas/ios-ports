@@ -6,6 +6,10 @@
 #import <AVKit/AVKit.h>
 
 static NSString *const UYTOfflineChanged = @"UYTOfflineChanged";
+static UIColor *UYTLibraryBackground(void) { return [UIColor colorWithWhite:15.0/255.0 alpha:1]; }
+static UIColor *UYTLibrarySurface(void) { return [UIColor colorWithWhite:39.0/255.0 alpha:1]; }
+static UIColor *UYTLibrarySecondaryText(void) { return [UIColor colorWithWhite:170.0/255.0 alpha:1]; }
+static UIColor *UYTLibraryAccent(void) { return [UIColor colorWithRed:1 green:0 blue:0.2 alpha:1]; }
 @interface UYTOfflineStore : NSObject <AVAssetDownloadDelegate>
 @property(nonatomic,strong) NSMutableArray<NSMutableDictionary *> *items;
 @property(nonatomic,strong) AVAssetDownloadURLSession *session;
@@ -26,20 +30,22 @@ static NSString *const UYTOfflineChanged = @"UYTOfflineChanged";
 - (void)directFailed:(NSMutableDictionary *)item message:(NSString *)message;
 - (NSString *)directDirectory:(NSString *)identifier;
 - (NSMutableDictionary *)directItem:(NSString *)identifier;
+- (BOOL)canPrepareItem:(NSDictionary *)item;
 @end
 @interface UYTOfflineVC : UIViewController <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UISearchBarDelegate>
 @property(nonatomic,strong) UICollectionView *grid;
 @property(nonatomic,strong) UISearchBar *search;
-@property(nonatomic,strong) UISegmentedControl *filters;
+@property(nonatomic,strong) NSArray<UIButton *> *filterButtons;
+@property(nonatomic) NSInteger selectedFilter;
 @property(nonatomic,strong) UILabel *summaryLabel;
 @property(nonatomic,strong) NSArray<NSDictionary *> *visibleItems;
 @property(nonatomic,strong) NSMutableSet *coverRequests;
+@property(nonatomic,strong) NSMutableSet *durationRequests;
 @property(nonatomic,strong) NSCache *coverCache;
 @property(nonatomic) BOOL sortByTitle;
 @property(nonatomic) BOOL modalLibrary;
 @property(nonatomic) CGFloat lastWidth;
 - (void)refresh;
-- (void)downloadLink;
 - (void)showOptions;
 @end
 

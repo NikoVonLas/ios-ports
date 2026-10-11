@@ -131,7 +131,8 @@ and normal subscription loading speed with Shorts removed. Native Elements card
 identity can use the unique video ID in the card’s own official thumbnail URLs.
 Local27 also accepts completed live recordings with a finite duration; active
 broadcasts remain excluded. Both profiles and regression tests pass locally;
-this last recording-specific fix awaits device validation.
+the user also confirmed visible playback with sound for the finished-stream recording
+on local27. Clean CI passed for both profiles on code revision 943ec10.
 No compatibility with an untested YouTube version is implied by a passing build.
 
 Sources/credit: arichornlover and qnblackcat (uYouEnhanced/uYouPlus), MiRO92 (uYou),

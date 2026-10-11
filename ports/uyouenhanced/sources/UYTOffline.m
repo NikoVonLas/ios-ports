@@ -200,3 +200,13 @@ void UYTInstallOfflineButton(UIViewController *controller) {
 }
 
 void UYTOpenLibrary(UIViewController *presenter) { UYTPresentLibrary(presenter); }
+
+NSURL *UYTLocalPreviewURL(NSString *videoID) {
+    for (NSDictionary *item in [UYTOfflineStore shared].items) {
+        if ([item[@"videoID"] isEqual:videoID] && [item[@"state"] isEqual:@"ready"]) {
+            NSURL *url=[[UYTOfflineStore shared] localURL:item];
+            if ([NSFileManager.defaultManager fileExistsAtPath:url.path]) return url;
+        }
+    }
+    return nil;
+}

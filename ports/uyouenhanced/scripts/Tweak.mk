@@ -1,7 +1,7 @@
 ARCHS = arm64
 include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = uYouEnhanced YouTubeDislikesReturn
-COMMON_SOURCES = Sources/UYTOffline.m Sources/UYTDirectFormats.m Sources/UYTSponsor.m Sources/UYTSponsorTimeline.m Sources/UYTMenuHooks.xm Sources/UYTSponsorHooks.xm Sources/UYTPlayerControls.xm Sources/UYTSavedTab.xm
+COMMON_SOURCES = Sources/UYTOffline.m Sources/UYTCardPreview.xm Sources/UYTShortsHooks.xm Sources/UYTShortsFilter.m Sources/UYTDirectFormats.m Sources/UYTSponsor.m Sources/UYTSponsorTimeline.m Sources/UYTMenuHooks.xm Sources/UYTSponsorHooks.xm Sources/UYTPlayerControls.xm Sources/UYTSavedTab.xm
 ifeq ($(PORT_PROFILE),rootful)
 uYouEnhanced_FILES = $(COMMON_SOURCES) Sources/UYTLegacyEntry.xm
 else

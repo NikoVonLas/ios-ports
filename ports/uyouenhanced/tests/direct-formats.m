@@ -15,5 +15,17 @@ int main(void) { @autoreleasepool {
     NSCAssert(UYTDirectFormats((id)NSNull.null,vid)==nil,@"must reject malformed response");
     NSDictionary *broken=@{@"mimeType":@"video/mp4; codecs=\"avc1\"",@"url":@"https://example.invalid/bad",@"height":NSNull.null,@"bitrate":NSNull.null};
     NSCAssert(UYTDirectFormats(response(vid,@[audio,broken]),vid)==nil,@"Malformed numeric fields must not crash");
+    NSDictionary *small=@{@"mimeType":@"video/mp4; codecs=\"avc1.42001E\"",@"url":@"https://example.invalid/preview",@"height":@360};
+    NSDictionary *preview=UYTPreviewFormat(response(vid,@[audio,video,small,av1]),vid);
+    NSCAssert([preview[@"video"][@"height"] isEqual:@360] && preview[@"audio"] && ![preview[@"muxed"] boolValue],@"Preview keeps sound and chooses low-resolution AVC");
+    NSCAssert(!UYTPreviewFormat(response(vid,@[small]),vid),@"Sound requested: reject silent-only streams");
+    NSCAssert(!UYTPreviewFormat(response(@"M7lc1UVf-VE",@[audio,small]),vid),@"Preview must reject mismatched video identity");
+    NSCAssert(!UYTPreviewFormat(response(vid,@[audio,broken]),vid),@"Malformed preview format must not crash");
+    NSDictionary *muxed=@{@"mimeType":@"video/mp4; codecs=\"avc1.42001E, mp4a.40.2\"",@"url":@"https://example.invalid/muxed",@"height":@360};
+    NSMutableDictionary *withMuxed=[response(vid,@[audio,small]) mutableCopy]; withMuxed[@"streamingData"]=@{@"formats":@[muxed],@"adaptiveFormats":@[audio,small]};
+    NSCAssert([UYTPreviewFormat(withMuxed,vid)[@"muxed"] boolValue],@"Prefer video+audio stream to composition");
+    NSMutableDictionary *live=[withMuxed mutableCopy]; live[@"videoDetails"]=@{@"videoId":vid,@"isLiveContent":@YES};
+    NSCAssert(!UYTPreviewFormat(live,vid),@"No bounded preview for live broadcast");
+    NSCAssert(!UYTPlayerRequest(@"../bad"),@"Invalid IDs cannot initiate requests");
     puts("PASS: selected video identity, audio required, A10 codec compatibility, malformed response and ID validation");
 } return 0; }

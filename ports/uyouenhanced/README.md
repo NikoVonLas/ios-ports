@@ -44,6 +44,14 @@ sources are in `sources/`, not in a temporary build directory.
   progress and error-only badges, pause/resume, retry, deletion and offline playback.
   The saved tab is placed immediately before the account tab; Shorts and Create
   are removed from the pivot model.
+- Shorts shelves and Shorts cards are filtered from feeds, including subscriptions;
+  ordinary videos are not filtered merely for having “Shorts” in their title.
+- Hold a video thumbnail for half a second to preview it with sound, for up to
+  15 seconds. Releasing the finger, scrolling, reusing the card or leaving the app
+  stops playback. Saved files are used locally; online previews select AVC/AAC up
+  to 480p. Live and unavailable streams are left as thumbnails. Native collection
+  and table cards are supported through their video renderer; device validation of
+  individual YouTube layouts is still required.
 - Menu downloads select the menu's own video ID, never a different playing video.
 
 - The player's download control uses a down-arrow/tray icon and joins YouTube's
@@ -117,6 +125,9 @@ header/search overlays and home logo hooks are removed. Saved navigation, downlo
 SponsorBlock and dislike restoration remain. Both profiles build locally; device
 validation of the home restoration is pending. A reported long-video preparation
 failure has not yet been reproduced with its exact AVFoundation code.
+Local22 adds hold-to-preview with audio and Shorts feed filtering. Both profiles
+build and pass package checks; format-selection and Shorts-marker tests pass.
+Gesture/audio behavior and subscription layouts still need device validation.
 No compatibility with an untested YouTube version is implied by a passing build.
 
 Sources/credit: arichornlover and qnblackcat (uYouEnhanced/uYouPlus), MiRO92 (uYou),

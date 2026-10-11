@@ -23,7 +23,7 @@ static void UYTMCollect(id obj, NSString *field, NSMutableSet *ids, NSHashTable 
     [seen addObject:obj];
     if ([obj isKindOfClass:NSDictionary.class]) { for (id key in obj) if ([key isKindOfClass:NSString.class]) UYTMCollect(obj[key],key,ids,seen,depth+1,budget); return; }
     if ([obj isKindOfClass:NSArray.class]) { for (id value in obj) UYTMCollect(value,field,ids,seen,depth+1,budget); return; }
-    NSMutableOrderedSet *names=[NSMutableOrderedSet orderedSetWithArray:@[@"videoId",@"videoID",@"offlineVideoID",@"offlineVideoId",@"contentVideoID",@"command",@"context",@"commandContext",@"params",@"parameters",@"commandParameters",@"renderer",@"endpoint",@"watchEndpoint",@"offlineVideoEndpoint",@"model",@"element",@"firstSubmessage",@"serviceEndpoint",@"navigationEndpoint",@"menuRenderer",@"rendererModel"]];
+    NSMutableOrderedSet *names=[NSMutableOrderedSet orderedSetWithArray:@[@"videoId",@"videoID",@"offlineVideoID",@"offlineVideoId",@"contentVideoID",@"command",@"context",@"commandContext",@"params",@"parameters",@"commandParameters",@"renderer",@"endpoint",@"watchEndpoint",@"offlineVideoEndpoint",@"model",@"element",@"firstSubmessage",@"serviceEndpoint",@"navigationEndpoint",@"menuRenderer",@"rendererModel",@"entry",@"elementEntry"]];
     id descriptor=UYTMRead(obj,@"descriptor"); id fields=UYTMRead(descriptor,@"fields");
     if ([fields isKindOfClass:NSArray.class]) for (id f in fields) { id name=UYTMRead(f,@"name"); if ([name isKindOfClass:NSString.class]) [names addObject:name]; }
     for (Class cls=[obj class]; cls && cls!=NSObject.class; cls=class_getSuperclass(cls)) {
@@ -46,6 +46,15 @@ static void UYTMCollect(id obj, NSString *field, NSMutableSet *ids, NSHashTable 
     for (NSString *name in names) UYTMCollect(UYTMRead(obj,name),name,ids,seen,depth+1,budget);
 }
 static NSSet *UYTMIDs(id object) { NSMutableSet *ids=[NSMutableSet set]; NSInteger budget=500; UYTMCollect(object,@"",ids,[NSHashTable hashTableWithOptions:NSPointerFunctionsObjectPointerPersonality],0,&budget); return ids; }
+NSString *UYTVideoIDForCard(id object) {
+    NSSet *ids=UYTMIDs(object); if (ids.count==1) return ids.anyObject;
+    if (ids.count || ![object respondsToSelector:NSSelectorFromString(@"descriptor")]) return nil;
+    NSString *text=[object description]; if (text.length>256*1024) return nil;
+    NSRegularExpression *regex=[NSRegularExpression regularExpressionWithPattern:@"(?:video_id|videoId|videoID)\\s*:\\s*\"([A-Za-z0-9_-]{11})\"" options:0 error:nil];
+    NSMutableSet *matches=[NSMutableSet set];
+    for (NSTextCheckingResult *match in [regex matchesInString:text options:0 range:NSMakeRange(0,text.length)]) [matches addObject:[text substringWithRange:[match rangeAtIndex:1]]];
+    return matches.count==1?matches.anyObject:nil;
+}
 static UIViewController *UYTMTop(void) {
     UIWindow *window=UYTKeyWindow();
     UIViewController *vc=window.rootViewController;
@@ -205,5 +214,5 @@ static void UYTMEndpoint(id command,id entry) {
 
 %ctor {
     %init;
-    NSLog(@"[UYTNative] local21 loaded offline-command-hook=1 media-client=android");
+    NSLog(@"[UYTNative] local22 loaded offline-command-hook=1 media-client=android");
 }

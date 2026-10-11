@@ -5,10 +5,7 @@ void UYTDownloadFromMenu(NSString *videoID, UIViewController *presenter) {
         [a addAction:[UIAlertAction actionWithTitle:@"Понятно" style:UIAlertActionStyleDefault handler:nil]]; [presenter presentViewController:a animated:YES completion:nil];
         NSLog(@"[UYTNative] Menu download rejected: no unambiguous video ID"); return;
     }
-    NSDictionary *body=@{@"context":@{@"client":@{@"clientName":@"ANDROID",@"clientVersion":@"21.08.266",@"androidSdkVersion":@30,@"osName":@"Android",@"osVersion":@"11",@"userAgent":@"com.google.android.youtube/21.08.266 (Linux; U; Android 11) gzip",@"hl":@"ru",@"gl":@"US"}},@"videoId":videoID,@"params":@"2AMB",@"playbackContext":@{@"contentPlaybackContext":@{@"html5Preference":@"HTML5_PREF_WANTS"}},@"contentCheckOk":@YES,@"racyCheckOk":@YES};
-    NSMutableURLRequest *request=[NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://youtubei.googleapis.com/youtubei/v1/player?prettyPrint=false"]]; request.HTTPMethod=@"POST"; request.timeoutInterval=25;
-    request.HTTPBody=[NSJSONSerialization dataWithJSONObject:body options:0 error:nil]; [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-    [request setValue:@"com.google.android.youtube/21.08.266 (Linux; U; Android 11) gzip" forHTTPHeaderField:@"User-Agent"];
+    NSMutableURLRequest *request=UYTPlayerRequest(videoID);
     UIAlertController *loading=[UIAlertController alertControllerWithTitle:@"Получаем варианты качества…" message:nil preferredStyle:UIAlertControllerStyleAlert];
     __block BOOL cancelled=NO; __block NSURLSessionDataTask *task=nil;
     [loading addAction:[UIAlertAction actionWithTitle:@"Отмена" style:UIAlertActionStyleCancel handler:^(UIAlertAction *a){ cancelled=YES; [task cancel]; task=nil; }]];

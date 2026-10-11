@@ -8,3 +8,6 @@ FOUNDATION_EXPORT BOOL UYTHandleDownloadSheet(id controller, id command, id cont
 FOUNDATION_EXPORT void UYTOpenLibrary(UIViewController *presenter);
 
 void UYTUpdateSavedTabsInView(UIView *view);
+
+FOUNDATION_EXPORT NSString *UYTVideoIDForCard(id object);
+FOUNDATION_EXPORT NSURL *UYTLocalPreviewURL(NSString *videoID);

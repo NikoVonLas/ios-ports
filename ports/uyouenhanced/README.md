@@ -39,10 +39,13 @@ sources are in `sources/`, not in a temporary build directory.
 
 ## Features
 
-- Russian «Сохранённое» library with covers, search, filters, sorting, visible
-  progress/errors, pause/resume, retry, deletion and offline AVPlayer playback.
+- Russian «Сохранённое» library with high-resolution 16:9 covers, duration,
+  full-width search, YouTube-style filters, white menus, sorting, download
+  progress and error-only badges, pause/resume, retry, deletion and offline playback.
+  The saved tab is placed immediately before the account tab; Shorts and Create
+  are removed from the pivot model.
 - Menu downloads select the menu's own video ID, never a different playing video.
-  The «Скачать» button also accepts a YouTube link or an exact video ID.
+
 - The player's download control uses a down-arrow/tray icon and joins YouTube's
   native top controls between captions and settings when both are present. It
   downloads the current video through the same quality menu, independently of
@@ -52,6 +55,16 @@ sources are in `sources/`, not in a temporary build directory.
   still bundled for its existing tab/integration; its internal bytes are not removed.
 - MP4 downloads combine AVC video and AAC audio; HLS uses
   `AVAssetDownloadURLSession`. Signed media URLs are not saved in the library index.
+  Before starting, downloads check space for the two tracks plus the merged file;
+  preparation checks remaining space again. Expected media lengths are verified
+  before merging. Preparation starts in the foreground, prevents automatic screen locking while
+  merging, and keeps inputs for retry if iOS suspends the app. Existing generic
+  preparation failures are rechecked once; detailed AVFoundation codes are retained.
+- Home displays public global music-video/song charts and a public gaming feed
+  below the native search row. The compass and microphone are preserved; the
+  YouTube title logo is hidden. Public feeds use an ephemeral session without
+  account cookies or credentials and do not enable watch history. Pull down to
+  refresh. YouTube can change the public page schema or restrict a chart by region.
 - SponsorBlock automatically skips **sponsor** segments in YouTube's local player
   and saved videos. Other categories are left alone. The gear button in the library
   turns skipping on/off. SponsorBlock does not control a remote Cast player.
@@ -71,6 +84,13 @@ sources are in `sources/`, not in a temporary build directory.
 SponsorBlock uses the [official API](https://wiki.sponsor.ajay.app/w/API_Docs).
 Dislikes are estimates from [Return YouTube Dislike](https://returnyoutubedislike.com/),
 not private official YouTube statistics. Both are community data services.
+
+Public music sources are the official [Top music videos](https://www.youtube.com/playlist?list=PL4fGSI1pDJn5kI81J1fYWK5eZRl1zJ5kM)
+and [Top songs](https://www.youtube.com/playlist?list=PL4fGSI1pDJn6puJdseH2Rt9sMvt9E2M4i)
+playlists linked from [YouTube Music](https://www.youtube.com/feed/music); gaming
+uses the public [Gaming](https://www.youtube.com/gaming) page. The safe JSON parser
+supports current lockup view models and legacy renderers without evaluating page
+scripts or collecting Shorts/menu/tracking payloads.
 
 ## Install and device validation
 
@@ -102,6 +122,11 @@ the lower rotate/repeat/download row disappeared and the independent top downloa
 button still opened the quality menu. Runtime confirmed disabled legacy actions,
 repeat off, and the saved library mounting with 11 entries. Airplane-mode playback
 and the old iOS 12 device remain unverified.
+Local16 loaded on the same tablet. Local18 builds and package checks pass for
+both profiles; native UI placement, the home search row and preparation recovery
+are awaiting device validation. The public parser was also run against actual
+YouTube pages (81 available music videos and 5 gaming videos). A reported long
+video failure has not yet been reproduced with its exact AVFoundation code.
 No compatibility with an untested YouTube version is implied by a passing build.
 
 Sources/credit: arichornlover and qnblackcat (uYouEnhanced/uYouPlus), MiRO92 (uYou),

@@ -17,6 +17,11 @@ static inline UIImage *UYTIcon(NSString *name) {
     NSDictionary *glyphs = @{@"ellipsis":@"•••", @"play.rectangle":@"▶", @"arrow.down.circle":@"↓", @"arrow.up.arrow.down":@"↕", @"gearshape":@"⚙"};
     UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(24,24)];
     return [[renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
+        if ([name isEqual:@"magnifyingglass"]) {
+            [UIColor.blackColor setStroke];
+            UIBezierPath *glass=[UIBezierPath bezierPathWithOvalInRect:CGRectMake(3,3,13,13)]; glass.lineWidth=1.8; [glass stroke];
+            UIBezierPath *handle=[UIBezierPath bezierPath]; [handle moveToPoint:CGPointMake(14,14)]; [handle addLineToPoint:CGPointMake(21,21)]; handle.lineWidth=1.8; handle.lineCapStyle=kCGLineCapRound; [handle stroke]; return;
+        }
         [(glyphs[name] ?: @"•") drawInRect:CGRectMake(0,0,24,24) withAttributes:@{NSFontAttributeName:[UIFont systemFontOfSize:18], NSForegroundColorAttributeName:UIColor.blackColor}];
     }] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
 }

@@ -16,6 +16,10 @@ static UIColor *UYTLibraryAccent(void) { return [UIColor colorWithRed:1 green:0 
 @property(nonatomic,strong) NSMutableDictionary<NSString *,id> *tasks;
 @property(nonatomic,strong) NSURLSession *directSession;
 @property(nonatomic,strong) NSMutableDictionary<NSString *,AVAssetExportSession *> *exports;
+@property(nonatomic,strong) NSMutableDictionary<NSString *,NSNumber *> *preparationBackgroundTasks;
+@property(nonatomic,strong) id preparationObserver;
+@property(nonatomic) BOOL preparationSavedIdleTimer;
+@property(nonatomic) BOOL preparationOwnsIdleTimer;
 + (instancetype)shared;
 - (NSString *)indexPath;
 - (void)save;
@@ -31,10 +35,11 @@ static UIColor *UYTLibraryAccent(void) { return [UIColor colorWithRed:1 green:0 
 - (NSString *)directDirectory:(NSString *)identifier;
 - (NSMutableDictionary *)directItem:(NSString *)identifier;
 - (BOOL)canPrepareItem:(NSDictionary *)item;
+- (void)finishPreparation:(NSString *)identifier;
 @end
-@interface UYTOfflineVC : UIViewController <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UISearchBarDelegate>
+@interface UYTOfflineVC : UIViewController <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UITextFieldDelegate>
 @property(nonatomic,strong) UICollectionView *grid;
-@property(nonatomic,strong) UISearchBar *search;
+@property(nonatomic,strong) UITextField *search;
 @property(nonatomic,strong) NSArray<UIButton *> *filterButtons;
 @property(nonatomic) NSInteger selectedFilter;
 @property(nonatomic,strong) UILabel *summaryLabel;
@@ -63,7 +68,10 @@ static UIColor *UYTLibraryAccent(void) { return [UIColor colorWithRed:1 green:0 
     if ((self = [super init])) {
         _items = [NSMutableArray array]; _tasks = [NSMutableDictionary dictionary];
         for (NSDictionary *entry in [NSArray arrayWithContentsOfFile:[self indexPath]])
-            if ([entry isKindOfClass:NSDictionary.class] && [entry[@"id"] isKindOfClass:NSString.class]) [_items addObject:[entry mutableCopy]];
+            if ([entry isKindOfClass:NSDictionary.class] && [entry[@"id"] isKindOfClass:NSString.class]) {
+                [_items addObject:[entry mutableCopy]];
+                NSLog(@"[UYTNative] Library item target=%@ state=%@ kind=%@ height=%@ error=%@",entry[@"videoID"],entry[@"state"],entry[@"kind"],entry[@"height"],entry[@"error"]);
+            }
         NSURLSessionConfiguration *config = [NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:@"com.nikovonlas.uyt.offline.hls.v1"];
         config.discretionary = NO; config.allowsCellularAccess = YES;
         _session = [AVAssetDownloadURLSession sessionWithConfiguration:config assetDownloadDelegate:self delegateQueue:NSOperationQueue.mainQueue];
@@ -159,6 +167,7 @@ static void UYTPresentLibrary(UIViewController *presenter) {
 #import "UYTSponsorTimeline.h"
 #include "UYTOfflinePlayer.inc"
 #include "UYTLibraryUI.inc"
+#include "UYTPopularUI.inc"
 #include "UYTMenuRequest.inc"
 
 BOOL UYTOfferOffline(NSURL *url, NSString *videoID, NSString *title, UIViewController *presenter) {

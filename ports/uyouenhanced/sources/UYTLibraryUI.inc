@@ -10,13 +10,6 @@ static NSString *UYTLibraryDuration(double seconds) {
     NSInteger total=(NSInteger)floor(seconds), hours=total/3600, minutes=(total%3600)/60;
     return hours?[NSString stringWithFormat:@"%ld:%02ld:%02ld",(long)hours,(long)minutes,(long)(total%60)]:[NSString stringWithFormat:@"%ld:%02ld",(long)minutes,(long)(total%60)];
 }
-static void UYTStyleSearchField(UIView *view) {
-    if ([view isKindOfClass:UITextField.class]) {
-        UITextField *field=(UITextField *)view; field.textColor=UIColor.whiteColor;
-        field.backgroundColor=UYTLibrarySurface(); field.layer.cornerRadius=8; field.clipsToBounds=YES;
-        field.attributedPlaceholder=[[NSAttributedString alloc] initWithString:@"Найти видео" attributes:@{NSForegroundColorAttributeName:UYTLibrarySecondaryText()}];
-    } else for (UIView *child in view.subviews) UYTStyleSearchField(child);
-}
 @interface UYTVideoCell : UICollectionViewCell
 @property(nonatomic,strong) UIImageView *cover;
 @property(nonatomic,strong) UILabel *nameLabel;
@@ -91,8 +84,18 @@ static void UYTFetchCover(NSString *videoID, NSUInteger variant, void (^completi
     UIStackView *heading = [[UIStackView alloc] initWithArrangedSubviews:@[title,options]]; heading.alignment = UIStackViewAlignmentCenter; heading.spacing = 12;
     [options.heightAnchor constraintEqualToConstant:44].active=YES;
     options.tintColor=UIColor.whiteColor;
-    self.search = [UISearchBar new]; self.search.placeholder = @"Найти видео"; self.search.searchBarStyle = UISearchBarStyleMinimal; self.search.delegate = self; self.search.autocapitalizationType = UITextAutocapitalizationTypeNone;
-    self.search.barStyle=UIBarStyleBlack; self.search.tintColor=UIColor.whiteColor; self.search.backgroundImage=[UIImage new];
+    self.search = [UITextField new]; self.search.delegate=self;
+    self.search.textColor=UIColor.whiteColor; self.search.tintColor=UIColor.whiteColor;
+    self.search.backgroundColor=UYTLibrarySurface(); self.search.layer.cornerRadius=8;
+    self.search.font=[UIFont systemFontOfSize:16]; self.search.returnKeyType=UIReturnKeySearch;
+    self.search.autocapitalizationType=UITextAutocapitalizationTypeNone; self.search.autocorrectionType=UITextAutocorrectionTypeNo;
+    self.search.clearButtonMode=UITextFieldViewModeWhileEditing;
+    self.search.attributedPlaceholder=[[NSAttributedString alloc] initWithString:@"Найти видео" attributes:@{NSForegroundColorAttributeName:UYTLibrarySecondaryText()}];
+    UIView *searchInset=[[UIView alloc] initWithFrame:CGRectMake(0,0,40,44)];
+    UIImageView *searchIcon=[[UIImageView alloc] initWithImage:UYTIcon(@"magnifyingglass")]; searchIcon.frame=CGRectMake(12,12,20,20); searchIcon.tintColor=UYTLibrarySecondaryText(); [searchInset addSubview:searchIcon];
+    self.search.leftView=searchInset; self.search.leftViewMode=UITextFieldViewModeAlways;
+    self.search.rightView=[[UIView alloc] initWithFrame:CGRectMake(0,0,12,44)]; self.search.rightViewMode=UITextFieldViewModeUnlessEditing;
+    [self.search addTarget:self action:@selector(searchChanged:) forControlEvents:UIControlEventEditingChanged];
     [self.search.heightAnchor constraintEqualToConstant:44].active=YES;
     NSMutableArray *chips=[NSMutableArray array];
     for (NSString *text in @[@"Все",@"Скачанные",@"Загружаются"]) {
@@ -132,7 +135,7 @@ static void UYTFetchCover(NSString *videoID, NSUInteger variant, void (^completi
     [self refresh];
 }
 - (void)dealloc { [[NSNotificationCenter defaultCenter] removeObserver:self]; }
-- (void)viewDidLayoutSubviews { [super viewDidLayoutSubviews]; UYTStyleSearchField(self.search); if (fabs(self.lastWidth-self.grid.bounds.size.width)>1) { self.lastWidth=self.grid.bounds.size.width; [self.grid.collectionViewLayout invalidateLayout]; } }
+- (void)viewDidLayoutSubviews { [super viewDidLayoutSubviews]; if (fabs(self.lastWidth-self.grid.bounds.size.width)>1) { self.lastWidth=self.grid.bounds.size.width; [self.grid.collectionViewLayout invalidateLayout]; } }
 - (void)close { [self dismissViewControllerAnimated:YES completion:nil]; }
 - (void)showOptions {
     UIAlertController *sheet=[UIAlertController alertControllerWithTitle:@"SponsorBlock и дизлайки" message:@"SponsorBlock пропускает спонсорские вставки. Дизлайки — оценка Return YouTube Dislike, а не точная статистика YouTube." preferredStyle:UIAlertControllerStyleActionSheet];
@@ -149,8 +152,8 @@ static void UYTFetchCover(NSString *videoID, NSUInteger variant, void (^completi
     [self presentViewController:sheet animated:YES completion:nil];
 }
 - (void)selectFilter:(UIButton *)sender { self.selectedFilter=sender.tag; [self refresh]; }
-- (void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)text { [self refresh]; }
-- (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar { [searchBar resignFirstResponder]; }
+- (void)searchChanged:(UITextField *)field { [self refresh]; }
+- (BOOL)textFieldShouldReturn:(UITextField *)field { [field resignFirstResponder]; return YES; }
 - (void)refresh {
     NSArray *all = [UYTOfflineStore shared].items; NSMutableArray *filtered = [NSMutableArray array]; NSInteger failed=0;
     for (UIButton *chip in self.filterButtons) {
@@ -161,7 +164,7 @@ static void UYTFetchCover(NSString *videoID, NSUInteger variant, void (^completi
     }
     NSString *query = [self.search.text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
     for (NSDictionary *item in all) {
-        NSString *state = item[@"state"]; BOOL downloaded = [state isEqual:@"ready"]; BOOL active = [state isEqual:@"loading"] || [state isEqual:@"paused"] || [state isEqual:@"processing"];
+        NSString *state = item[@"state"]; BOOL downloaded = [state isEqual:@"ready"]; BOOL active = [state isEqual:@"loading"] || [state isEqual:@"paused"] || [state isEqual:@"processing"] || [state isEqual:@"waiting"];
         failed += [state isEqual:@"failed"];
         if (self.selectedFilter==1 && !downloaded) continue;
         if (self.selectedFilter==2 && !active) continue;
@@ -228,7 +231,7 @@ static void UYTFetchCover(NSString *videoID, NSUInteger variant, void (^completi
 - (UICollectionViewCell *)collectionView:(UICollectionView *)view cellForItemAtIndexPath:(NSIndexPath *)index {
     UYTVideoCell *cell=[view dequeueReusableCellWithReuseIdentifier:@"video" forIndexPath:index]; NSDictionary *item=self.visibleItems[index.item]; NSString *state=item[@"state"];
     cell.representedID=item[@"videoID"]; cell.nameLabel.text=item[@"title"];
-    BOOL active=[state isEqual:@"loading"] || [state isEqual:@"paused"] || [state isEqual:@"processing"];
+    BOOL active=[state isEqual:@"loading"] || [state isEqual:@"paused"] || [state isEqual:@"processing"] || [state isEqual:@"waiting"];
     BOOL failed=[state isEqual:@"failed"];
     cell.statusLabel.hidden=!failed; cell.statusLabel.text=failed?@"Не удалось скачать":nil;
     cell.statusLabel.backgroundColor=[UIColor colorWithRed:0.5 green:0.12 blue:0.15 alpha:0.95];
@@ -237,7 +240,7 @@ static void UYTFetchCover(NSString *videoID, NSUInteger variant, void (^completi
     [self loadDuration:item intoCell:cell];
     [self loadCover:item intoCell:cell];
     NSMutableArray *actions=[NSMutableArray array]; __weak UYTOfflineVC *weakSelf=self;
-    if (active && ![state isEqual:@"processing"]) [actions addObject:[UYTLibraryAction actionWithTitle:[state isEqual:@"paused"]?@"Продолжить загрузку":@"Приостановить" image:nil identifier:nil handler:^(UYTLibraryAction *a){
+    if (active && ![state isEqual:@"processing"] && ![state isEqual:@"waiting"]) [actions addObject:[UYTLibraryAction actionWithTitle:[state isEqual:@"paused"]?@"Продолжить загрузку":@"Приостановить" image:nil identifier:nil handler:^(UYTLibraryAction *a){
         UYTOfflineStore *store=[UYTOfflineStore shared]; id task=store.tasks[item[@"id"]];
         if (task) { BOOL resume=[item[@"state"] isEqual:@"paused"]; if (resume) [task resume]; else [task suspend]; ((NSMutableDictionary *)item)[@"state"]=resume?@"loading":@"paused"; [store save]; }
     }]];
@@ -258,6 +261,7 @@ static void UYTFetchCover(NSString *videoID, NSUInteger variant, void (^completi
 - (void)deleteItem:(NSDictionary *)item {
     UYTOfflineStore *store=[UYTOfflineStore shared]; [store.tasks[item[@"id"]] cancel]; [store.tasks removeObjectForKey:item[@"id"]];
     [store.exports[item[@"id"]] cancelExport]; [store.exports removeObjectForKey:item[@"id"]];
+    [store finishPreparation:item[@"id"]];
     if ([item[@"kind"] isEqual:@"direct"]) [[NSFileManager defaultManager] removeItemAtPath:[store directDirectory:item[@"id"]] error:nil];
     NSURL *url=[store localURL:item]; if (url) [[NSFileManager defaultManager] removeItemAtURL:url error:nil]; [store.items removeObject:(NSMutableDictionary *)item]; [store save];
 }

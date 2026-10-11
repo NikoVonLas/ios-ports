@@ -41,7 +41,38 @@ static UIImage *UYTDiskette(BOOL selected) {
     return selected?filled:outline;
 }
 static BOOL UYTIsSavedName(id name) {
-    return [name isKindOfClass:NSString.class] && ([name isEqual:@"uYou"] || [name isEqual:UYTSavedTitle]);
+    return [name isKindOfClass:NSString.class] && ([name isEqual:@"uYou"] || [name isEqual:@"com.miro.uyou"] || [name isEqual:UYTSavedTitle]);
+}
+// Normalise the model, not frames: YouTube can render the bar again after login
+// or rotation, and uYou inserts its item while reading this same array.
+static void UYTArrangeTabs(NSMutableArray *items) {
+    if (![items isKindOfClass:NSMutableArray.class]) return;
+    id saved=nil, account=nil;
+    NSMutableArray *remove=[NSMutableArray array];
+    NSMutableArray *identifiers=[NSMutableArray array];
+    for (id support in [items copy]) {
+        SEL onlySelector=NSSelectorFromString(@"hasPivotBarIconOnlyItemRenderer");
+        BOOL iconOnly=[support respondsToSelector:onlySelector] && ((BOOL(*)(id,SEL))objc_msgSend)(support,onlySelector);
+        id item=UYTSavedRead(support,iconOnly?@"pivotBarIconOnlyItemRenderer":@"pivotBarItemRenderer");
+        NSString *identifier=UYTSavedRead(item,@"pivotIdentifier");
+        if (![identifier isKindOfClass:NSString.class]) continue;
+        [identifiers addObject:identifier];
+        if ((iconOnly && !identifier.length) || [@[@"FEshorts",@"FEuploads",@"FEupload",@"FEcreation",@"FEcreate"] containsObject:identifier]) [remove addObject:support];
+        if (UYTIsSavedName(identifier)) saved=support;
+        if ([@[@"FEyou",@"FEaccount",@"FElibrary"] containsObject:identifier]) account=support;
+    }
+    [items removeObjectsInArray:remove];
+    if (saved && account && [items indexOfObject:saved]+1!=[items indexOfObject:account]) {
+        [items removeObjectIdenticalTo:saved];
+        NSUInteger index=[items indexOfObjectIdenticalTo:account];
+        if (index!=NSNotFound) [items insertObject:saved atIndex:index];
+    }
+    static NSString *last;
+    NSString *signature=[identifiers componentsJoinedByString:@","];
+    if (![last isEqual:signature]) {
+        last=signature;
+        NSLog(@"[UYTNative] Tabs source=%@ removed=%lu saved-before-account=%d",signature,(unsigned long)remove.count,saved && account);
+    }
 }
 static void UYTSavedDescendants(UIView *view, NSMutableArray<UIView *> *result) {
     if (result.count>100) return;
@@ -80,6 +111,11 @@ static void UYTStyleSavedTab(UIView *view) {
 }
 
 %hook YTIPivotBarRenderer
+- (id)itemsArray {
+    id items=%orig;
+    UYTArrangeTabs(items);
+    return items;
+}
 + (id)pivotSupportedRenderersWithBrowseId:(id)browseId title:(id)title iconType:(int)iconType {
     if (UYTIsSavedName(title) || [browseId isEqual:@"uYou"]) title=UYTSavedTitle;
     return %orig(browseId,title,iconType);

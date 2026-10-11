@@ -205,5 +205,5 @@ static void UYTMEndpoint(id command,id entry) {
 
 %ctor {
     %init;
-    NSLog(@"[UYTNative] local19 loaded offline-command-hook=1 media-client=android");
+    NSLog(@"[UYTNative] local20 loaded offline-command-hook=1 media-client=android");
 }

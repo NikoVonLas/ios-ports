@@ -81,7 +81,8 @@ static void UYTSavedDescendants(UIView *view, NSMutableArray<UIView *> *result) 
 }
 static const void *UYTSavedViewKey=&UYTSavedViewKey;
 static BOOL UYTIsSavedView(UIView *view) {
-    if ([objc_getAssociatedObject(view,UYTSavedViewKey) boolValue] || UYTIsSavedName(view.accessibilityLabel)) return YES;
+    if ([objc_getAssociatedObject(view,UYTSavedViewKey) boolValue] || UYTIsSavedName(view.accessibilityLabel) || [view.accessibilityLabel hasPrefix:@"Сохранённое,"] || [view.accessibilityLabel hasPrefix:@"uYou,"]) return YES;
+    if (![NSStringFromClass(view.class) isEqual:@"YTPivotBarItemView"]) return NO;
     for (NSString *key in @[@"renderer",@"_item"]) {
         id item=UYTSavedRead(view,key);
         if (!item) { @try { item=[view valueForKey:key]; } @catch (__unused NSException *e) {} }
@@ -164,5 +165,56 @@ static void UYTStyleSavedTab(UIView *view) {
     UIView *saved=UYTSavedAncestor((UIView *)self);
     if (saved) image=UYTDiskette(UYTSavedSelected(saved));
     %orig(image);
+}
+%end
+
+static void UYTStyleElementsSavedTab(UIView *view) {
+    if (!UYTIsSavedView(view) || view.bounds.size.height<20 || view.bounds.size.height>100) return;
+    BOOL selected=UYTSavedSelected(view);
+    NSMutableArray *children=[NSMutableArray array]; UYTSavedDescendants(view,children);
+    UIView *target=nil;
+    for (UIView *child in children) {
+        if (child.tag==947235) continue;
+        CGSize size=child.bounds.size;
+        if (size.width>=20 && size.width<=36 && size.height>=20 && size.height<=36 && ![child isKindOfClass:UILabel.class]) { target=child; break; }
+    }
+    if (!target) return;
+    UIView *host=target.superview;
+    UIImageView *icon=(UIImageView *)[host viewWithTag:947235];
+    if (!icon) {
+        icon=[UIImageView new]; icon.tag=947235; icon.userInteractionEnabled=NO;
+        icon.isAccessibilityElement=NO;
+        [host addSubview:icon];
+    }
+    icon.frame=[target convertRect:target.bounds toView:host]; target.hidden=YES;
+    icon.contentMode=UIViewContentModeScaleAspectFit; icon.tintColor=UIColor.whiteColor; icon.image=UYTDiskette(selected);
+    [host bringSubviewToFront:icon];
+    static BOOL reported=NO; if (!reported) { reported=YES; NSLog(@"[UYTNative] Elements Saved icon mounted class=%@ selected=%d",NSStringFromClass(view.class),selected); }
+}
+void UYTUpdateSavedTabsInView(UIView *root) {
+    if (!root) return;
+    NSMutableArray *queue=[NSMutableArray arrayWithObject:root]; NSUInteger remaining=1200;
+    while (queue.count && remaining--) {
+        UIView *view=queue.firstObject; [queue removeObjectAtIndex:0];
+        if (view.hidden || view.tag==947234 || view.tag==947235) continue;
+        CGRect frame=[view convertRect:view.bounds toView:view.window ?: root];
+        if (CGRectGetMaxY(frame)>(view.window ?: root).bounds.size.height-110 && UYTIsSavedView(view)) {
+            if ([NSStringFromClass(view.class) isEqual:@"YTPivotBarItemView"]) UYTStyleSavedTab(view);
+            else UYTStyleElementsSavedTab(view);
+        }
+        [queue addObjectsFromArray:view.subviews];
+    }
+}
+%hook YTPivotBarView
+- (void)layoutSubviews {
+    %orig;
+    UYTUpdateSavedTabsInView((UIView *)self);
+}
+%end
+%hook _ASDisplayView
+- (void)layoutSubviews {
+    %orig;
+    UIView *view=(UIView *)self;
+    if (view.window && view.bounds.size.height>=20 && view.bounds.size.height<=100 && CGRectGetMaxY([view convertRect:view.bounds toView:view.window])>view.window.bounds.size.height-110 && UYTIsSavedView(view)) UYTStyleElementsSavedTab(view);
 }
 %end

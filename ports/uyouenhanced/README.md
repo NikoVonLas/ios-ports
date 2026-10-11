@@ -123,8 +123,11 @@ button still opened the quality menu. Runtime confirmed disabled legacy actions,
 repeat off, and the saved library mounting with 11 entries. Airplane-mode playback
 and the old iOS 12 device remain unverified.
 Local16 loaded on the same tablet. Local18 builds and package checks pass for
-both profiles. Local19 adds persistent outline/filled Saved icons and isolated
-thumbnail requests with runtime diagnostics. Native UI placement, the home search row and preparation recovery
+both profiles. Local19–20 add outline/filled Saved icons for both native pivot views and
+Elements tabs, and isolated
+thumbnail requests with runtime diagnostics. Local19 runtime confirms 1280 px
+thumbnail downloads and the home feed positioned below the search row; the
+visual result and icon state still require device confirmation. Preparation recovery
 are awaiting device validation. The public parser was also run against actual
 YouTube pages (81 available music videos and 5 gaming videos). A reported long
 video failure has not yet been reproduced with its exact AVFoundation code.

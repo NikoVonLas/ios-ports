@@ -77,7 +77,7 @@ static CGFloat UYTHomeSearchBottom(UIView *root, UIView *view, NSUInteger *remai
         }
         bottom=CGRectGetMaxY([row convertRect:row.bounds toView:root]);
     }
-    if ([identifier isEqual:@"id.yoodle.logo"]) view.hidden=YES;
+    if ([identifier isEqual:@"id.yoodle.logo"] || [identifier isEqual:@"id.youtube.logo"]) view.hidden=YES;
     for (UIView *child in view.subviews) bottom=MAX(bottom,UYTHomeSearchBottom(root,child,remaining));
     return bottom;
 }
@@ -110,12 +110,13 @@ static void UYTInstallHome(UIViewController *controller) {
             while (queue.count && limit-- && printed<50) {
                 UIView *view=queue.firstObject; [queue removeObjectAtIndex:0]; if (view.hidden || view.tag==947234) continue;
                 CGRect rect=[view convertRect:view.bounds toView:owner.view.window];
-                if (rect.origin.y>=0 && rect.origin.y<200 && rect.size.height>=16 && rect.size.height<=120) {
-                    NSLog(@"[UYTNative] Home header class=%@ id=%@ frame=%@",NSStringFromClass(view.class),view.accessibilityIdentifier ?: @"",NSStringFromCGRect(rect)); printed++;
+                if (((rect.origin.y>=0 && rect.origin.y<240) || CGRectGetMaxY(rect)>owner.view.window.bounds.size.height-110) && rect.size.height>=16 && rect.size.height<=120) {
+                    NSLog(@"[UYTNative] Home chrome class=%@ id=%@ frame=%@ saved=%d selected=%d",NSStringFromClass(view.class),view.accessibilityIdentifier ?: @"",NSStringFromCGRect(rect),[view.accessibilityLabel containsString:@"uYou"] || [view.accessibilityLabel containsString:@"Сохранённое"],(view.accessibilityTraits&UIAccessibilityTraitSelected)!=0); printed++;
                 }
                 [queue addObjectsFromArray:view.subviews];
             }
             UYTInstallHome(owner);
+            UYTUpdateSavedTabsInView(owner.view.window);
         });
     }
     CGRect frame=controller.view.bounds; frame.origin.y=top; frame.size.height=MAX(0,frame.size.height-top-controller.view.safeAreaInsets.bottom);

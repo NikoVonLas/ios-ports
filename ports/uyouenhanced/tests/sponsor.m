@@ -21,6 +21,10 @@ int main(void) { @autoreleasepool {
     NSCAssert(UYTSponsorSkipEnd(segments,30,100)==-1,@"Exact end must not loop");
     NSCAssert(UYTSponsorSkipEnd(segments,15,NAN)==-1,@"Unknown duration must not seek");
     NSCAssert(UYTSponsorSkipEnd(@[],15,100)==-1,@"No segments (404/offline cache miss) must preserve playback");
+    NSArray *markers=UYTSponsorMarkerRanges(@[@[@10,@20],@[@90,@120],@[@100,@120],@[@(-1),@10],@[@0,@(NAN)],@[@"1",@2]],100);
+    NSCAssert(markers.count==2 && [markers[0][0] doubleValue]==0.1 && [markers[0][1] doubleValue]==0.2,@"Markers must use the actual video's normalized time coordinates");
+    NSCAssert([markers[1][0] doubleValue]==0.9 && [markers[1][1] doubleValue]==1,@"Clamp markers at the end of the video and reject invalid or out-of-video intervals");
+    NSCAssert(UYTSponsorMarkerRanges(segments,NAN).count==0 && UYTSponsorMarkerRanges(segments,0).count==0,@"Live/unknown duration must not draw misleading markers");
     NSCAssert([UYTVideoIDFromInput(@"https://youtu.be/jNQXAC9IVRw?t=12") isEqual:@"jNQXAC9IVRw"],@"Short link");
     NSCAssert([UYTVideoIDFromInput(@"https://www.youtube.com/watch?v=jNQXAC9IVRw") isEqual:@"jNQXAC9IVRw"],@"Watch link");
     NSCAssert([UYTVideoIDFromInput(@"https://m.youtube.com/shorts/jNQXAC9IVRw") isEqual:@"jNQXAC9IVRw"],@"Shorts link");

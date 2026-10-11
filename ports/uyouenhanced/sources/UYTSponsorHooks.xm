@@ -4,6 +4,7 @@
 #import <math.h>
 #import "UYTSponsor.h"
 #import "UYTDirectFormats.h"
+#import "UYTSponsorTimeline.h"
 
 static char UYTSponsorVideoKey, UYTSponsorRangesKey, UYTSponsorLastSeekKey;
 static void UYTUpdateSponsor(YTPlayerViewController *player) {
@@ -14,14 +15,18 @@ static void UYTUpdateSponsor(YTPlayerViewController *player) {
     objc_setAssociatedObject(player,&UYTSponsorVideoKey,videoID,OBJC_ASSOCIATION_COPY_NONATOMIC);
     objc_setAssociatedObject(player,&UYTSponsorRangesKey,@[],OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     objc_setAssociatedObject(player,&UYTSponsorLastSeekKey,nil,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    UYTRefreshSponsorTimeline(player,@[]);
     __weak YTPlayerViewController *weakPlayer = player;
     UYTFetchSponsorSegments(videoID, ^(NSArray *ranges) {
-        if ([objc_getAssociatedObject(weakPlayer,&UYTSponsorVideoKey) isEqual:videoID])
+        if (weakPlayer && [objc_getAssociatedObject(weakPlayer,&UYTSponsorVideoKey) isEqual:videoID]) {
             objc_setAssociatedObject(weakPlayer,&UYTSponsorRangesKey,ranges,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            UYTRefreshSponsorTimeline(weakPlayer,ranges);
+        }
     });
 }
 static void UYTMaybeSkip(YTPlayerViewController *player) {
     UYTUpdateSponsor(player);
+    UYTRefreshSponsorTimeline(player,objc_getAssociatedObject(player,&UYTSponsorRangesKey));
     if (!UYTSponsorEnabled() || ![player respondsToSelector:@selector(currentVideoMediaTime)] ||
         ![player respondsToSelector:@selector(currentVideoTotalMediaTime)] ||
         ([player respondsToSelector:@selector(isPlayingAd)] && player.isPlayingAd) ||
@@ -43,5 +48,10 @@ static void UYTMaybeSkip(YTPlayerViewController *player) {
 - (void)potentiallyMutatedSingleVideo:(id)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
     UYTMaybeSkip(self);
+}
+- (void)viewDidAppear:(BOOL)animated {
+    %orig;
+    UYTUpdateSponsor(self);
+    UYTRefreshSponsorTimeline(self,objc_getAssociatedObject(self,&UYTSponsorRangesKey));
 }
 %end

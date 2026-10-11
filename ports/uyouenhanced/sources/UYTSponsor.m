@@ -31,6 +31,18 @@ double UYTSponsorSkipEnd(NSArray *segments, double time, double duration) {
     }
     return end > time ? MIN(end,duration) : -1;
 }
+NSArray *UYTSponsorMarkerRanges(NSArray *segments, double duration) {
+    if (!isfinite(duration) || duration <= 0) return @[];
+    NSMutableArray *markers=[NSMutableArray array];
+    for (id range in segments) {
+        if (![range isKindOfClass:NSArray.class] || [range count]!=2 ||
+            ![range[0] isKindOfClass:NSNumber.class] || ![range[1] isKindOfClass:NSNumber.class]) continue;
+        double start=[range[0] doubleValue], end=[range[1] doubleValue];
+        if (!isfinite(start) || !isfinite(end) || start<0 || end<=start || start>=duration) continue;
+        [markers addObject:@[@(start/duration),@(MIN(end,duration)/duration)]];
+    }
+    return markers;
+}
 static NSString *UYTSponsorPath(NSString *videoID) {
     if (!UYTValidVideoID(videoID)) return nil;
     NSString *directory = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory,NSUserDomainMask,YES).firstObject stringByAppendingPathComponent:@"UYTOffline/SponsorBlock"];

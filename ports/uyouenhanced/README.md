@@ -43,6 +43,10 @@ sources are in `sources/`, not in a temporary build directory.
   progress/errors, pause/resume, retry, deletion and offline AVPlayer playback.
 - Menu downloads select the menu's own video ID, never a different playing video.
   The «Скачать» button also accepts a YouTube link or an exact video ID.
+- The player's download control uses a down-arrow/tray icon and joins YouTube's
+  native top controls between captions and settings when both are present. It
+  downloads the current video through the same quality menu; uYou's speed controls
+  keep their actions and receive Russian accessibility labels.
 - MP4 downloads combine AVC video and AAC audio; HLS uses
   `AVAssetDownloadURLSession`. Signed media URLs are not saved in the library index.
 - SponsorBlock automatically skips **sponsor** segments in YouTube's local player
@@ -52,6 +56,10 @@ sources are in `sources/`, not in a temporary build directory.
   possible, and usable offline. No-segments 404 and failed API calls leave playback
   available; failures do not replace a successful cache. Newly downloaded videos
   prefetch metadata. Fetches cannot affect a different video's player.
+- Sponsor intervals appear in green on the playback timeline. Markers follow
+  the track on resize/fullscreen, stay below the draggable dot and accept no touches.
+  Unknown/live durations and ads hide the markers. AVKit's saved-video time slider
+  is supported when that system version exposes its AVScrubber UISlider.
 - Return YouTube Dislike is compiled from the pinned upstream submodule and
   restores estimated dislike counts in compatible YouTube UIs. Its existing
   settings remain available. The library gear also toggles display. Vote submission
@@ -80,10 +88,13 @@ the old ignored snapshot directory for rollback on the iPadOS 17 device.
 
 Verification covers actual builds, architecture, deployment load commands,
 signatures, Substrate paths, injection filters, archive checksums and selection/
-skipping tests. **Device launch, download, mux, sound, airplane-mode playback and
-on-screen dislike rendering still require validation on both devices.** The old
-iPad currently has no YouTube app installed. No compatibility with an untested
-YouTube version is implied by a passing build.
+skipping/marker-range tests. On 2026-10-11, local13 launched on iPad7,5 with iPadOS
+17.7.11 and YouTube 21.40.5, retained eight library entries and played a saved video
+with sound (confirmed by the user). The native feed download menu resolved four
+qualities and began a 1080p download; final mux and airplane-mode playback remain
+unverified. Local14's control placement and timeline marks need device validation.
+On-screen dislike rendering and the old iOS 12 device also remain unverified.
+No compatibility with an untested YouTube version is implied by a passing build.
 
 Sources/credit: arichornlover and qnblackcat (uYouEnhanced/uYouPlus), MiRO92 (uYou),
 PoomSmart and the pinned Return-YouTube-Dislikes contributors (RYD), and SponsorBlock

@@ -150,6 +150,7 @@ static void UYTPresentLibrary(UIViewController *presenter) {
     [presenter presentViewController:nav animated:YES completion:nil];
 }
 #include "UYTLibraryActions.inc"
+#import "UYTSponsorTimeline.h"
 #include "UYTOfflinePlayer.inc"
 #include "UYTLibraryUI.inc"
 #include "UYTMenuRequest.inc"

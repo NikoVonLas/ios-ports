@@ -90,10 +90,11 @@ Verification covers actual builds, architecture, deployment load commands,
 signatures, Substrate paths, injection filters, archive checksums and selection/
 skipping/marker-range tests. On 2026-10-11, local13 launched on iPad7,5 with iPadOS
 17.7.11 and YouTube 21.40.5, retained eight library entries and played a saved video
-with sound (confirmed by the user). The native feed download menu resolved four
-qualities and began a 1080p download; final mux and airplane-mode playback remain
-unverified. Local14's control placement and timeline marks need device validation.
-On-screen dislike rendering and the old iOS 12 device also remain unverified.
+with sound (confirmed by the user). On the same device, the user confirmed local14's
+download icon between captions/settings, quality menu, green sponsor intervals and
+a real automatic skip. A new MP4 download completed with video and audio merged
+(device log `videoAndAudio=1`). On-screen dislike rendering was also confirmed by
+the user. Airplane-mode playback and the old iOS 12 device remain unverified.
 No compatibility with an untested YouTube version is implied by a passing build.
 
 Sources/credit: arichornlover and qnblackcat (uYouEnhanced/uYouPlus), MiRO92 (uYou),

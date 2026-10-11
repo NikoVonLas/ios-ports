@@ -67,8 +67,12 @@ with tempfile.TemporaryDirectory(dir=PORT / '.build') as temp:
             if not line.startswith('\t'):
                 continue
             dependency = line.strip().partition(' (')[0]
+            if profile_name == 'rootful':
+                assert not dependency.startswith(('@rpath/', '@loader_path/', '@executable_path/')), 'Unbundled iOS 12 dependency: ' + dependency
             if dependency.startswith((LIBRARY_PATH,'/var/jb'+LIBRARY_PATH)):
                 assert dependency.startswith(profile['prefix']+LIBRARY_PATH), dependency
+        if profile_name == 'rootful' and basename == 'uYouEnhanced':
+            assert '/System/Library/Frameworks/CoreMedia.framework/CoreMedia ' in dependencies, 'Use the native CoreMedia provider on iOS 12'
         subprocess.run(['codesign','--verify',str(binary)],check=True)
         print(binary.name, 'arm64, iOS >=', minimum[1], 'signature and dependencies OK')
 assert hashlib.sha256(deb.read_bytes()).hexdigest() == deb.with_name(deb.name+'.sha256').read_text().split()[0]

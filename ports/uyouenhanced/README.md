@@ -7,7 +7,7 @@ This restores the working local12 download client from the previously ignored
 
 | Profile | Device | Minimum OS | Package | Interface |
 | --- | --- | --- | --- | --- |
-| rootful | iPad Air A1476 / iPad4,3 / A7, Amethyst | iOS 12.0 | `iphoneos-arm` (arm64 binary) | «Сохранённое» launcher, independent library |
+| rootful | iPad Air A1476 / iPad4,3 / A7, Amethyst | iOS 12.2 | `iphoneos-arm` (arm64 binary) | «Сохранённое» launcher, independent library |
 | rootless | iPad7,5 / A10, Dopamine | iPadOS 16.0 | `iphoneos-arm64` | Existing uYou «Сохранённое» tab |
 
 The same Objective-C download/library/SponsorBlock sources serve both profiles.
@@ -101,6 +101,33 @@ purchase history associated with your Apple account. Availability depends on the
 store/account and Google's retained versions. An old app can also be rejected by
 YouTube's servers; lowering the tweak's deployment target cannot fix that.
 
+On the tested A1476, the store offered only the current app requiring iOS 17+.
+A local installation used the developer's archived
+[uYouPlus 16.42.3 / 2.1 release](https://github.com/qnblackcat/uYouPlus/releases/tag/v17.25.1-2.1).
+The native app genuinely targets iOS 12.0. `scripts/prepare_ios12_app.py` accepts
+only that pinned IPA SHA-256, removes the old embedded tweaks and the iOS 15 Safari
+extension, and adds explicit loads for this installed rootful package. It signs
+the native frameworks/app ad hoc for AppSync, preserves the bundle ID/data and
+does not lower any native OS requirement. The optional compact mode keeps
+Russian/English resources to reduce installation time:
+
+```sh
+python3 scripts/prepare_ios12_app.py .build/uYouPlus_16.42.3_2.1.ipa \
+  .build/YouTube-iOS12-local.ipa --compact-locales
+```
+
+Keep these proprietary input/output IPAs outside Git. The prepared app depends on
+the installed rootful DEB and active Amethyst/AppSync. Rootful now reports server
+client version 20.10.3 for older native clients: anonymous browse requests from
+16.42.3 and 19.49.7 returned HTTP 400, while 20.10.3 returned HTTP 200 on 2026-10-11.
+This does not imply support for every renderer or playback response.
+
+The rootful deployment minimum is 12.2: the installed SDK 27 maps CoreMedia C
+symbols to an unavailable `@rpath/libswiftCoreMedia.dylib` at a 12.0 deployment
+target. A real iOS 12 crash identified that dependency. At 12.2 these symbols bind
+to the native CoreMedia framework; package verification rejects unbundled relative
+runtime dependencies and requires the native provider.
+
 Install the rootful DEB on Amethyst and the rootless DEB on Dopamine using Sileo.
 Close YouTube fully and reopen it. After a full device reboot, reactivate the
 jailbreak before using the tweak. Existing `UYTOffline` media and its index are not
@@ -119,7 +146,7 @@ the user. Local15 was then installed on the same tablet; the user confirmed that
 the lower rotate/repeat/download row disappeared and the independent top download
 button still opened the quality menu. Runtime confirmed disabled legacy actions,
 repeat off, and the saved library mounting with 11 entries. Airplane-mode playback
-and the old iOS 12 device remain unverified.
+remains unverified; the first iOS 12 runtime results are recorded below.
 Local21 restores the standard YouTube home at the user's request; custom charts,
 header/search overlays and home logo hooks are removed. Saved navigation, downloads,
 SponsorBlock and dislike restoration remain. Both profiles build locally; device
@@ -133,6 +160,13 @@ Local27 also accepts completed live recordings with a finite duration; active
 broadcasts remain excluded. Both profiles and regression tests pass locally;
 the user also confirmed visible playback with sound for the finished-stream recording
 on local27. Clean CI passed for both profiles on code revision 943ec10.
+On iPad4,3 / iOS 12.5.8, local30 is installed with native YouTube 16.42.3.
+The corrected process remains running, and its cache-only runtime diagnostic
+confirms the native version, version class, `YTMainWindow`, mounted saved launcher
+and HTTP 200 / no error from a credential-free native HEAD request. Actual feed
+rendering, download/playback, SponsorBlock and dislike UI on this tablet still
+require device confirmation. The rootless tablet remains on verified local27;
+these additional hooks are compiled only into the rootful profile.
 No compatibility with an untested YouTube version is implied by a passing build.
 
 Sources/credit: arichornlover and qnblackcat (uYouEnhanced/uYouPlus), MiRO92 (uYou),

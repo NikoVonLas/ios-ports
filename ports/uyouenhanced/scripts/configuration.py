@@ -16,7 +16,7 @@ def load_config():
         if not re.fullmatch(r'[0-9a-f]{' + str(count) + '}',config[key]):
             raise ValueError('Invalid pinned ' + key)
     expected = {
-        'rootful': {'minimum_ios':'12.0','architecture':'iphoneos-arm','prefix':'','bundled_uyou':False},
+        'rootful': {'minimum_ios':'12.2','architecture':'iphoneos-arm','prefix':'','bundled_uyou':False},
         'rootless': {'minimum_ios':'16.0','architecture':'iphoneos-arm64','prefix':'/var/jb','bundled_uyou':True},
     }
     if config['profiles'] != expected:

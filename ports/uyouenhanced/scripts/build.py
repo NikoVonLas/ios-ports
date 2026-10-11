@@ -17,6 +17,7 @@ def main():
     # Restore only this disposable upstream checkout's tracked files.
     subprocess.run(['git', 'checkout-index', '-a', '-f'], cwd=source, check=True)
     subprocess.run(['git', 'apply', '--ignore-space-change', '--unidiff-zero', str(PORT / 'patches/local12-main.patch')], cwd=source, check=True)
+    subprocess.run(['git', 'apply', '--ignore-space-change', str(PORT / 'patches/remove-player-repeat.patch')], cwd=source, check=True)
     for path in (PORT / 'sources').iterdir():
         shutil.copy2(path, source / 'Sources' / path.name)
     shutil.copy2(PORT / 'scripts/Tweak.mk', source / 'Makefile')

@@ -45,8 +45,11 @@ sources are in `sources/`, not in a temporary build directory.
   The «Скачать» button also accepts a YouTube link or an exact video ID.
 - The player's download control uses a down-arrow/tray icon and joins YouTube's
   native top controls between captions and settings when both are present. It
-  downloads the current video through the same quality menu; uYou's speed controls
-  keep their actions and receive Russian accessibility labels.
+  downloads the current video through the same quality menu, independently of
+  uYou's old button. The extra rotate/repeat/download row is disabled and detached;
+  its actions cannot run, and uYou repeat stays off. Upstream repeat-related patches
+  are removed from our compiled sources. The proprietary rootless uYou binary is
+  still bundled for its existing tab/integration; its internal bytes are not removed.
 - MP4 downloads combine AVC video and AAC audio; HLS uses
   `AVAssetDownloadURLSession`. Signed media URLs are not saved in the library index.
 - SponsorBlock automatically skips **sponsor** segments in YouTube's local player

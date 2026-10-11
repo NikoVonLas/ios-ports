@@ -64,13 +64,14 @@ static CGFloat UYTHomeSearchBottom(UIView *root, UIView *view, NSUInteger *remai
     NSString *identifier=view.accessibilityIdentifier.lowercaseString ?: @"";
     NSString *label=view.accessibilityLabel.lowercaseString ?: @"";
     NSString *className=NSStringFromClass(view.class).lowercaseString;
-    BOOL search=([className containsString:@"search"] || [identifier containsString:@"search"] || [label isEqual:@"поиск"] || [label isEqual:@"search"] || [label containsString:@"поиск на youtube"]);
+    BOOL search=([className containsString:@"search"] || [identifier containsString:@"search"] || [label hasPrefix:@"поиск"] || [label hasPrefix:@"search"]);
     CGFloat bottom=0;
     CGRect frame=[view convertRect:view.bounds toView:root];
-    if (search && CGRectGetMinY(frame)>=0 && CGRectGetMinY(frame)<240 && frame.size.height>=20 && frame.size.height<=100) {
+    CGRect windowFrame=[view convertRect:view.bounds toView:view.window];
+    if (search && CGRectGetMinY(windowFrame)>=0 && CGRectGetMinY(windowFrame)<240 && frame.size.height>=20 && frame.size.height<=100) {
         // Preserve the entire search row, including compass and microphone.
         UIView *row=view;
-        for (UIView *parent=view.superview;parent && parent!=root;parent=parent.superview) {
+        for (UIView *parent=view.superview;parent && parent!=view.window;parent=parent.superview) {
             CGRect candidate=[parent convertRect:parent.bounds toView:root];
             if (candidate.size.height>=36 && candidate.size.height<=100 && candidate.size.width>=root.bounds.size.width*0.5 && CGRectGetMinY(candidate)<240) row=parent;
         }
@@ -80,6 +81,7 @@ static CGFloat UYTHomeSearchBottom(UIView *root, UIView *view, NSUInteger *remai
     for (UIView *child in view.subviews) bottom=MAX(bottom,UYTHomeSearchBottom(root,child,remaining));
     return bottom;
 }
+static void UYTInstallHome(UIViewController *controller);
 static void UYTInstallHome(UIViewController *controller) {
     if (!UYTIsHomeController(controller)) return;
     static const void *childKey=&childKey;
@@ -90,9 +92,32 @@ static void UYTInstallHome(UIViewController *controller) {
         [controller.view addSubview:popular.view]; [popular didMoveToParentViewController:controller];
         objc_setAssociatedObject(controller,childKey,popular,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
-    NSUInteger remaining=600;
-    CGFloat searchBottom=UYTHomeSearchBottom(controller.view,controller.view,&remaining);
-    CGFloat top=MAX(controller.view.safeAreaInsets.top,searchBottom?searchBottom+4:0);
+    NSUInteger remaining=1200;
+    // The native search/compass/microphone row may belong to the outer header,
+    // rather than to YTBrowseViewController's own subtree.
+    UIView *surface=controller.view.window ?: controller.view;
+    CGFloat searchBottom=UYTHomeSearchBottom(controller.view,surface,&remaining);
+    CGFloat top=MAX(controller.view.safeAreaInsets.top,searchBottom>0?searchBottom+4:0);
+    if (!searchBottom && !controller.view.window) { popular.view.hidden=YES; return; }
+    popular.view.hidden=NO;
+    static const void *diagnosticKey=&diagnosticKey;
+    if (!objc_getAssociatedObject(controller,diagnosticKey) && controller.view.window) {
+        objc_setAssociatedObject(controller,diagnosticKey,@YES,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        __weak UIViewController *weakController=controller;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW,NSEC_PER_SEC),dispatch_get_main_queue(), ^{
+            UIViewController *owner=weakController; if (!owner.view.window) return;
+            NSMutableArray *queue=[NSMutableArray arrayWithObject:owner.view.window]; NSUInteger limit=1200, printed=0;
+            while (queue.count && limit-- && printed<50) {
+                UIView *view=queue.firstObject; [queue removeObjectAtIndex:0]; if (view.hidden || view.tag==947234) continue;
+                CGRect rect=[view convertRect:view.bounds toView:owner.view.window];
+                if (rect.origin.y>=0 && rect.origin.y<200 && rect.size.height>=16 && rect.size.height<=120) {
+                    NSLog(@"[UYTNative] Home header class=%@ id=%@ frame=%@",NSStringFromClass(view.class),view.accessibilityIdentifier ?: @"",NSStringFromCGRect(rect)); printed++;
+                }
+                [queue addObjectsFromArray:view.subviews];
+            }
+            UYTInstallHome(owner);
+        });
+    }
     CGRect frame=controller.view.bounds; frame.origin.y=top; frame.size.height=MAX(0,frame.size.height-top-controller.view.safeAreaInsets.bottom);
     if (!CGRectEqualToRect(popular.view.frame,frame)) {
         popular.view.frame=frame;

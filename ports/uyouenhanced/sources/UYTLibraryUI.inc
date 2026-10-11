@@ -53,17 +53,32 @@ static NSString *UYTThumbnailPath(NSString *videoID) {
 }
 
 static NSUInteger UYTCoverCost(UIImage *image) { return (NSUInteger)(image.size.width*image.scale*image.size.height*image.scale*4); }
+static NSURLSession *UYTCoverSession(void) {
+    static NSURLSession *session; static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        NSURLSessionConfiguration *configuration=NSURLSessionConfiguration.ephemeralSessionConfiguration;
+        configuration.HTTPShouldSetCookies=NO; configuration.HTTPCookieStorage=nil; configuration.URLCredentialStorage=nil;
+        configuration.HTTPMaximumConnectionsPerHost=6;
+        session=[NSURLSession sessionWithConfiguration:configuration];
+    });
+    return session;
+}
 static void UYTFetchCover(NSString *videoID, NSUInteger variant, void (^completion)(UIImage *, NSData *)) {
     NSArray *names=@[@"maxresdefault",@"sddefault",@"hqdefault",@"mqdefault"];
     if (variant>=names.count) { completion(nil,nil); return; }
     NSURL *url=[NSURL URLWithString:[NSString stringWithFormat:@"https://i.ytimg.com/vi/%@/%@.jpg",videoID,names[variant]]];
     NSMutableURLRequest *request=[NSMutableURLRequest requestWithURL:url]; request.timeoutInterval=12;
-    [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data,NSURLResponse *response,NSError *error){
+    [[UYTCoverSession() dataTaskWithRequest:request completionHandler:^(NSData *data,NSURLResponse *response,NSError *error){
         UIImage *image=(!error && [(NSHTTPURLResponse *)response statusCode]==200 && data.length<=4*1024*1024)?[UIImage imageWithData:data]:nil;
         CGFloat width=image.size.width*image.scale;
         // Missing resolutions may return a small placeholder instead of HTTP 404.
-        if (image && width>=(variant==3?160:480) && width<=4096) completion(image,data);
-        else if (error) completion(nil,nil);
+        if (image && width>=(variant==3?160:480) && width<=4096) {
+            NSLog(@"[UYTNative] Cover loaded target=%@ variant=%lu width=%.0f",videoID,(unsigned long)variant,width);
+            completion([image imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal],data);
+        } else if (error) {
+            NSLog(@"[UYTNative] Cover failed target=%@ error=%@:%ld",videoID,error.domain,(long)error.code);
+            completion(nil,nil);
+        }
         else UYTFetchCover(videoID,variant+1,completion);
     }] resume];
 }

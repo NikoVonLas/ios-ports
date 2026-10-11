@@ -1,6 +1,7 @@
 #import <UIKit/UIKit.h>
 #import "UYTCompatibility.h"
 #import <objc/message.h>
+#import <objc/runtime.h>
 
 static NSString *const UYTSavedTitle = @"Сохранённое";
 static id UYTSavedRead(id object, NSString *name) {
@@ -78,14 +79,32 @@ static void UYTSavedDescendants(UIView *view, NSMutableArray<UIView *> *result) 
     if (result.count>100) return;
     for (UIView *child in view.subviews) { [result addObject:child]; UYTSavedDescendants(child,result); }
 }
+static const void *UYTSavedViewKey=&UYTSavedViewKey;
+static BOOL UYTIsSavedView(UIView *view) {
+    if ([objc_getAssociatedObject(view,UYTSavedViewKey) boolValue] || UYTIsSavedName(view.accessibilityLabel)) return YES;
+    for (NSString *key in @[@"renderer",@"_item"]) {
+        id item=UYTSavedRead(view,key);
+        if (!item) { @try { item=[view valueForKey:key]; } @catch (__unused NSException *e) {} }
+        if (UYTIsSavedName(UYTSavedRead(item,@"pivotIdentifier"))) return YES;
+    }
+    return NO;
+}
+static BOOL UYTSavedSelected(UIView *view) {
+    id button=UYTSavedRead(view,@"navigationButton");
+    return (view.accessibilityTraits&UIAccessibilityTraitSelected)!=0 || ([button isKindOfClass:UIControl.class] && ((UIControl *)button).selected);
+}
+static UIView *UYTSavedAncestor(UIView *view) {
+    for (UIView *parent=view.superview;parent;parent=parent.superview)
+        if ([NSStringFromClass(parent.class) isEqual:@"YTPivotBarItemView"]) return UYTIsSavedView(parent)?parent:nil;
+    return nil;
+}
 static void UYTStyleSavedTab(UIView *view) {
-    id item=UYTSavedRead(view,@"renderer");
-    if (!item) { @try { item=[view valueForKey:@"_item"]; } @catch (__unused NSException *e) {} }
-    BOOL saved=UYTIsSavedName(UYTSavedRead(item,@"pivotIdentifier"));
+    BOOL saved=UYTIsSavedView(view);
     NSMutableArray<UIView *> *children=[NSMutableArray array]; UYTSavedDescendants(view,children);
     for (UIView *child in children) if ([child isKindOfClass:UILabel.class] && UYTIsSavedName(((UILabel *)child).text)) saved=YES;
     if (!saved) return;
-    BOOL selected=(view.accessibilityTraits&UIAccessibilityTraitSelected)!=0;
+    objc_setAssociatedObject(view,UYTSavedViewKey,@YES,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    BOOL selected=UYTSavedSelected(view);
     id navigation=UYTSavedRead(view,@"navigationButton");
     if ([navigation isKindOfClass:UIControl.class]) selected|=((UIControl *)navigation).selected;
     UIColor *tint=UYTColor(@"labelColor");
@@ -94,10 +113,12 @@ static void UYTStyleSavedTab(UIView *view) {
         if (UYTIsSavedName(label.text)) { label.text=UYTSavedTitle; label.adjustsFontSizeToFitWidth=YES; label.minimumScaleFactor=0.75; tint=label.textColor; }
     }
     for (UIView *child in children) {
-        if ([child isKindOfClass:UIButton.class] && UYTIsSavedName(((UIButton *)child).currentTitle)) {
+        if ([child isKindOfClass:UIButton.class] && (child==navigation || ((UIButton *)child).currentImage || UYTIsSavedName(((UIButton *)child).currentTitle))) {
             UIButton *button=(UIButton *)child;
-            [button setTitle:UYTSavedTitle forState:UIControlStateNormal];
-            [button setTitle:UYTSavedTitle forState:UIControlStateSelected];
+            if (UYTIsSavedName(button.currentTitle)) {
+                [button setTitle:UYTSavedTitle forState:UIControlStateNormal];
+                [button setTitle:UYTSavedTitle forState:UIControlStateSelected];
+            }
             [button setImage:UYTDiskette(NO) forState:UIControlStateNormal];
             [button setImage:UYTDiskette(YES) forState:UIControlStateSelected];
         }
@@ -126,5 +147,22 @@ static void UYTStyleSavedTab(UIView *view) {
 - (void)layoutSubviews {
     %orig;
     UYTStyleSavedTab((UIView *)self);
+}
+%end
+
+// Native child buttons update their images after the pivot view's layout.
+// Substitute at that update too, so returning to Home cannot restore uYou's glyph.
+%hook UIImageView
+- (void)setImage:(UIImage *)image {
+    UIView *saved=UYTSavedAncestor((UIView *)self);
+    if (saved && ((UIView *)self).bounds.size.width<=40 && ((UIView *)self).bounds.size.height<=40) image=UYTDiskette(UYTSavedSelected(saved));
+    %orig(image);
+}
+%end
+%hook YTQTMButton
+- (void)setImage:(UIImage *)image {
+    UIView *saved=UYTSavedAncestor((UIView *)self);
+    if (saved) image=UYTDiskette(UYTSavedSelected(saved));
+    %orig(image);
 }
 %end

@@ -61,7 +61,7 @@ sources are in `sources/`, not in a temporary build directory.
   merging, and keeps inputs for retry if iOS suspends the app. Existing generic
   preparation failures are rechecked once; detailed AVFoundation codes are retained.
 - Home displays public global music-video/song charts and a public gaming feed
-  below the native search row. The compass and microphone are preserved; the
+  below the native search row. The native row is located across the outer header as well as the browse view; the
   YouTube title logo is hidden. Public feeds use an ephemeral session without
   account cookies or credentials and do not enable watch history. Pull down to
   refresh. YouTube can change the public page schema or restrict a chart by region.
@@ -123,7 +123,8 @@ button still opened the quality menu. Runtime confirmed disabled legacy actions,
 repeat off, and the saved library mounting with 11 entries. Airplane-mode playback
 and the old iOS 12 device remain unverified.
 Local16 loaded on the same tablet. Local18 builds and package checks pass for
-both profiles; native UI placement, the home search row and preparation recovery
+both profiles. Local19 adds persistent outline/filled Saved icons and isolated
+thumbnail requests with runtime diagnostics. Native UI placement, the home search row and preparation recovery
 are awaiting device validation. The public parser was also run against actual
 YouTube pages (81 available music videos and 5 gaming videos). A reported long
 video failure has not yet been reproduced with its exact AVFoundation code.

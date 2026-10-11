@@ -131,7 +131,9 @@ The user confirmed Shorts disappeared from subscriptions on local22, but reporte
 slower loading and nonworking previews. Logs showed the hold gesture with no video
 identity. Local23 binds generic Elements controllers and their inner card views;
 Shorts checks scan/cache raw component data instead of repeated protobuf descriptions.
-These corrections still need device validation.
+Shorts performance still needs device validation. Local23 still lacked a video
+identity on YTVideoWithContextNode; local24 follows that node’s scoped card responder
+and inline renderer. Its playback behavior remains pending device validation.
 No compatibility with an untested YouTube version is implied by a passing build.
 
 Sources/credit: arichornlover and qnblackcat (uYouEnhanced/uYouPlus), MiRO92 (uYou),

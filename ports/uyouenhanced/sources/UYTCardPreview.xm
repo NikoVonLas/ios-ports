@@ -14,6 +14,10 @@ static id UYTPRead(id object,NSString *key) {
     @try { return [object valueForKey:key]; } @catch (__unused NSException *exception) { return nil; }
 }
 static const void *UYTPBoundVideoKey=&UYTPBoundVideoKey;
+static id UYTPObjectIvar(id object,const char *name) {
+    Ivar ivar=class_getInstanceVariable([object class],name); const char *type=ivar?ivar_getTypeEncoding(ivar):NULL;
+    return type && type[0]=='@'?object_getIvar(object,ivar):nil;
+}
 static NSString *UYTPNodeID(id node) {
     // Modern feed nodes keep the InnerTube card controller as their responder,
     // while their ELM controller only exposes a C++ materialization instance.
@@ -25,13 +29,19 @@ static NSString *UYTPNodeID(id node) {
     for (NSString *key in @[@"inlinePlaybackRenderer",@"_inlinePlaybackRenderer",@"videoRenderer",@"_videoRenderer"]) {
         NSString *identifier=UYTVideoIDForCard(UYTPRead(node,key)); if (identifier) return identifier;
     }
+    for (NSString *key in @[@"_context",@"_nodeModel"]) {
+        NSString *identifier=UYTVideoIDForCard(UYTPObjectIvar(node,key.UTF8String)); if (identifier) return identifier;
+    }
     return UYTVideoIDForCard(UYTPRead(node,@"element")) ?: UYTVideoIDForCard(UYTPRead(node,@"controller")) ?: UYTVideoIDForCard(node);
 }
 static NSString *UYTPFields(id object) {
     NSMutableArray *names=[NSMutableArray array];
-    for (Class cls=[object class]; cls && cls!=NSObject.class && names.count<80; cls=class_getSuperclass(cls)) {
+    for (Class cls=[object class]; cls && cls!=NSObject.class && names.count<24; cls=class_getSuperclass(cls)) {
         unsigned int count=0; Ivar *ivars=class_copyIvarList(cls,&count);
-        for (unsigned int i=0;i<count && names.count<80;i++) [names addObject:@(ivar_getName(ivars[i]))]; free(ivars);
+        for (unsigned int i=0;i<count && names.count<24;i++) {
+            const char *type=ivar_getTypeEncoding(ivars[i]);
+            [names addObject:[NSString stringWithFormat:@"%s:%s",ivar_getName(ivars[i]),type?:"?"]];
+        } free(ivars);
     }
     return [NSString stringWithFormat:@"%@:%@",NSStringFromClass([object class]),[names componentsJoinedByString:@","]];
 }
@@ -67,7 +77,11 @@ static NSString *UYTPCardID(UIView *cell,CGPoint point) {
         }
         NSLog(@"[UYTNative] Preview identity path=%@",[classes componentsJoinedByString:@","]);
         id root=UYTPRead(cell,@"node");
-        NSLog(@"[UYTNative] Preview identity fields node=%@ responder=%@ element=%@ controller=%@",UYTPFields(root),UYTPFields(UYTPRead(root,@"parentResponder")),UYTPFields(UYTPRead(root,@"element")),UYTPFields(UYTPRead(root,@"controller")));
+        NSLog(@"[UYTNative] Preview node fields=%@",UYTPFields(root));
+        NSLog(@"[UYTNative] Preview context fields=%@",UYTPFields(UYTPObjectIvar(root,"_context")));
+        NSLog(@"[UYTNative] Preview responder fields=%@",UYTPFields(UYTPRead(root,@"parentResponder")));
+        NSLog(@"[UYTNative] Preview element fields=%@",UYTPFields(UYTPRead(root,@"element")));
+        NSLog(@"[UYTNative] Preview controller fields=%@",UYTPFields(UYTPRead(root,@"controller")));
     }
     return nil;
 }

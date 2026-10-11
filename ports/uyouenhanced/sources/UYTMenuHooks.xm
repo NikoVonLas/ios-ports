@@ -38,7 +38,7 @@ static void UYTMCollect(id obj, NSString *field, NSMutableSet *ids, NSHashTable 
         for (unsigned int i=0;i<count;i++) {
             const char *type=ivar_getTypeEncoding(ivars[i]);
             NSString *name=@(ivar_getName(ivars[i])); NSString *lower=name.lowercaseString;
-            if (type && type[0]=='@' && ([lower containsString:@"video"] || [lower containsString:@"renderer"] || [lower containsString:@"endpoint"] || [lower containsString:@"command"] || [lower isEqualToString:@"_model"])) {
+            if (type && type[0]=='@' && ([lower containsString:@"video"] || [lower containsString:@"renderer"] || [lower containsString:@"endpoint"] || [lower containsString:@"command"] || [lower isEqualToString:@"_model"] || [lower isEqualToString:@"_context"] || [lower isEqualToString:@"_entry"] || [lower isEqualToString:@"_nodemodel"] || [lower containsString:@"inlineplayback"])) {
                 UYTMCollect(object_getIvar(obj,ivars[i]),name,ids,seen,depth+1,budget);
             }
         } free(ivars);
@@ -214,5 +214,5 @@ static void UYTMEndpoint(id command,id entry) {
 
 %ctor {
     %init;
-    NSLog(@"[UYTNative] local24 loaded offline-command-hook=1 media-client=android");
+    NSLog(@"[UYTNative] local25 loaded offline-command-hook=1 media-client=android");
 }

@@ -49,7 +49,7 @@ sources are in `sources/`, not in a temporary build directory.
 - Hold a video thumbnail for half a second to preview it with sound, for up to
   15 seconds. Releasing the finger, scrolling, reusing the card or leaving the app
   stops playback. Saved files are used locally; online previews select AVC/AAC up
-  to 480p. Live and unavailable streams are left as thumbnails. Native collection
+  to 480p. Active live broadcasts and unavailable streams are left as thumbnails. Native collection
   and table cards are supported through their video renderer; device validation of
   individual YouTube layouts is still required.
 - Menu downloads select the menu's own video ID, never a different playing video.
@@ -125,17 +125,13 @@ header/search overlays and home logo hooks are removed. Saved navigation, downlo
 SponsorBlock and dislike restoration remain. Both profiles build locally; device
 validation of the home restoration is pending. A reported long-video preparation
 failure has not yet been reproduced with its exact AVFoundation code.
-Local22 adds hold-to-preview with audio and Shorts feed filtering. Both profiles
-build and pass package checks; format-selection and Shorts-marker tests pass.
-The user confirmed Shorts disappeared from subscriptions on local22, but reported
-slower loading and nonworking previews. Logs showed the hold gesture with no video
-identity. Local23 binds generic Elements controllers and their inner card views;
-Shorts checks scan/cache raw component data instead of repeated protobuf descriptions.
-Shorts performance still needs device validation. Local23 still lacked a video
-identity on YTVideoWithContextNode; local24 follows that node’s scoped card responder
-and inline renderer. Local24/25 still had no identity on that node. Local26 also extracts a unique
-video ID from official thumbnail URLs inside the card’s raw Elements data; binary
-payloads and mixed-video rejection are tested. Actual playback remains unverified.
+On the same iPad, local26 displayed previews for local files and online streams.
+The user confirmed sound, restoration of the cover after releasing the finger,
+and normal subscription loading speed with Shorts removed. Native Elements card
+identity can use the unique video ID in the card’s own official thumbnail URLs.
+Local27 also accepts completed live recordings with a finite duration; active
+broadcasts remain excluded. Both profiles and regression tests pass locally;
+this last recording-specific fix awaits device validation.
 No compatibility with an untested YouTube version is implied by a passing build.
 
 Sources/credit: arichornlover and qnblackcat (uYouEnhanced/uYouPlus), MiRO92 (uYou),

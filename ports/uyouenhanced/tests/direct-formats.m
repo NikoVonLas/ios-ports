@@ -26,6 +26,13 @@ int main(void) { @autoreleasepool {
     NSCAssert([UYTPreviewFormat(withMuxed,vid)[@"muxed"] boolValue],@"Prefer video+audio stream to composition");
     NSMutableDictionary *live=[withMuxed mutableCopy]; live[@"videoDetails"]=@{@"videoId":vid,@"isLiveContent":@YES};
     NSCAssert(!UYTPreviewFormat(live,vid),@"No bounded preview for live broadcast");
+    live[@"videoDetails"]=@{@"videoId":vid,@"isLiveContent":@YES,@"lengthSeconds":@"17030"};
+    NSCAssert(UYTPreviewFormat(live,vid),@"Finished live recording with finite duration can preview");
+    live[@"videoDetails"]=@{@"videoId":vid,@"isLiveContent":@YES,@"lengthSeconds":@"17030",@"isLive":@YES};
+    NSCAssert(!UYTPreviewFormat(live,vid),@"Active live broadcast remains excluded even with a reported length");
+    live[@"videoDetails"]=@{@"videoId":vid,@"isLiveContent":@YES,@"lengthSeconds":@"17030"};
+    live[@"microformat"]=@{@"playerMicroformatRenderer":@{@"liveBroadcastDetails":@{@"isLiveNow":@YES}}};
+    NSCAssert(!UYTPreviewFormat(live,vid),@"Broadcast metadata also distinguishes live from recording");
     NSCAssert(!UYTPlayerRequest(@"../bad"),@"Invalid IDs cannot initiate requests");
     NSMutableData *thumbnail=[NSMutableData dataWithBytes:"\xff\0" length:2];
     [thumbnail appendData:[@"https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg https://i9.ytimg.com/vi_webp/jNQXAC9IVRw/mqdefault.webp?x=1" dataUsingEncoding:NSUTF8StringEncoding]];

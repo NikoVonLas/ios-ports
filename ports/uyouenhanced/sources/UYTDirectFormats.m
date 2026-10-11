@@ -64,7 +64,16 @@ NSDictionary *UYTPreviewFormat(NSDictionary *response,NSString *videoID) {
     if (![response isKindOfClass:NSDictionary.class] || !UYTValidVideoID(videoID)) return nil;
     NSDictionary *details=response[@"videoDetails"],*status=response[@"playabilityStatus"],*streaming=response[@"streamingData"];
     if (![details isKindOfClass:NSDictionary.class] || ![status isKindOfClass:NSDictionary.class] || ![streaming isKindOfClass:NSDictionary.class] || ![details[@"videoId"] isEqual:videoID] || ![status[@"status"] isEqual:@"OK"]) return nil;
-    id live=details[@"isLiveContent"]; if ([live respondsToSelector:@selector(boolValue)] && [live boolValue]) return nil;
+    id live=details[@"isLiveContent"],active=details[@"isLive"];
+    NSDictionary *micro=[response[@"microformat"] isKindOfClass:NSDictionary.class]?response[@"microformat"]:nil;
+    NSDictionary *renderer=[micro[@"playerMicroformatRenderer"] isKindOfClass:NSDictionary.class]?micro[@"playerMicroformatRenderer"]:nil;
+    NSDictionary *broadcast=[renderer[@"liveBroadcastDetails"] isKindOfClass:NSDictionary.class]?renderer[@"liveBroadcastDetails"]:nil;
+    id now=broadcast[@"isLiveNow"];
+    if (([active respondsToSelector:@selector(boolValue)] && [active boolValue]) || ([now respondsToSelector:@selector(boolValue)] && [now boolValue]) || [status[@"liveStreamability"] isKindOfClass:NSDictionary.class]) return nil;
+    if ([live respondsToSelector:@selector(boolValue)] && [live boolValue]) {
+        id length=details[@"lengthSeconds"]; double seconds=[length respondsToSelector:@selector(doubleValue)]?[length doubleValue]:0;
+        if (!isfinite(seconds) || seconds<=0) return nil;
+    }
     NSArray *progressive=streaming[@"formats"],*adaptive=streaming[@"adaptiveFormats"];
     for (id format in [progressive isKindOfClass:NSArray.class]?progressive:@[]) {
         if (![format isKindOfClass:NSDictionary.class] || !UYTMediaURL(format[@"url"]) || ![format[@"mimeType"] isKindOfClass:NSString.class] || ![format[@"height"] isKindOfClass:NSNumber.class]) continue;

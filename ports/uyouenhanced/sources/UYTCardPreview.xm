@@ -33,7 +33,7 @@ static NSString *UYTPNodeID(id node) {
     for (NSString *key in @[@"inlinePlaybackRenderer",@"_inlinePlaybackRenderer",@"videoRenderer",@"_videoRenderer"]) {
         NSString *identifier=UYTVideoIDForCard(UYTPRead(node,key)); if (identifier) return identifier;
     }
-    for (NSString *key in @[@"_context",@"_nodeModel"]) {
+    for (NSString *key in @[@"_nodeModel"]) {
         NSString *identifier=UYTVideoIDForCard(UYTPObjectIvar(node,key.UTF8String)); if (identifier) return identifier;
     }
     return UYTVideoIDForCard(UYTPRead(node,@"element")) ?: UYTVideoIDForCard(UYTPRead(node,@"controller")) ?: UYTVideoIDForCard(node);

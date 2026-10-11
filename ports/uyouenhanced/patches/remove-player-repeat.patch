@@ -1,0 +1,31 @@
+--- a/Sources/uYouPlus.xm
++++ b/Sources/uYouPlus.xm
+@@ -501,17 +501,6 @@
+     %end
+ %end
+
+-// Fix uYou Repeat - @bhackel
+-// When uYou repeat is enabled, and Suggested Video Popup is disabled,
+-// the endscreen view with multiple suggestions is overlayed when it
+-// should not be.
+-%hook YTFullscreenEngagementOverlayController
+-- (BOOL)isEnabled {
+-    // repeatVideo is the key for uYou Repeat
+-    return IS_ENABLED(@"repeatVideo") ? NO : %orig;
+-}
+-%end
+-
+ # pragma mark - Hide Notification Button && SponsorBlock Button && uYouPlus Button
+ %hook YTRightNavigationButtons
+ - (void)layoutSubviews {
+--- a/Sources/uYouPatches.xm
++++ b/Sources/uYouPatches.xm
+@@ -725,7 +725,6 @@
+         return NO;
+     }
+
+-    // Also check repeatVideo - existing behavior
+-    return IS_ENABLED(@"repeatVideo") ? NO : %orig;
++    return %orig;
+ }
+ %end

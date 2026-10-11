@@ -1,0 +1,41 @@
+--- a/Sources/uYouPlus.xm
++++ b/Sources/uYouPlus.xm
+@@ -2,0 +3 @@
++#import "UYTOffline.h"
+@@ -35,35 +36 @@
+-    if (IS_ENABLED(kReplaceYTDownloadWithuYou) && [arg2 isKindOfClass:%c(ELMPBShowActionSheetCommand)]) {
+-        ELMPBShowActionSheetCommand *showCommand = (ELMPBShowActionSheetCommand *)arg2;
+-        NSArray *listOptions = [showCommand listOptionArray];
+-
+-        for (ELMPBElement *element in listOptions) {
+-            ELMPBProperties *properties = [element properties];
+-            if (!properties) continue;
+-
+-            NSString *identifier = nil;
+-
+-            if ([properties respondsToSelector:@selector(firstSubmessage)]) {
+-                id sub = [properties firstSubmessage];
+-                if ([sub respondsToSelector:@selector(identifier)]) {
+-                    identifier = [sub identifier];
+-                }
+-            } else if ([properties respondsToSelector:@selector(submessageAtIndex:)]) {
+-                id sub = [properties submessageAtIndex:0];
+-                if ([sub respondsToSelector:@selector(identifier)]) {
+-                    identifier = [sub identifier];
+-                }
+-            } else if ([properties respondsToSelector:@selector(description)]) {
+-                NSString *desc = [properties description];
+-                if ([desc containsString:@"offline_upsell_dialog"]) {
+-                    identifier = @"offline_upsell_dialog";
+-                }
+-            }
+-
+-            if (identifier && [identifier containsString:@"offline_upsell_dialog"]) {
+-                if (controlsOverlayView && [controlsOverlayView respondsToSelector:@selector(uYou)]) {
+-                    [controlsOverlayView uYou];
+-                }
+-                return;
+-            }
+-        }
+-    }
++    if (UYTHandleDownloadSheet(arg1, arg2, arg3)) return;

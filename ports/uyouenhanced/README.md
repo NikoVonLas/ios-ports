@@ -1,0 +1,176 @@
+# uYouEnhanced Local — both iPads
+
+This restores the working local12 download client from the previously ignored
+`.build/uyouenhanced` snapshots into the `ios-ports` Git project. It extends
+[uYouEnhanced](https://github.com/arichornlover/uYouEnhanced) at commit
+`2b6816069c2156eef626084cf7fe645749a2b152`, with its pinned header/RYD submodules.
+
+| Profile | Device | Minimum OS | Package | Interface |
+| --- | --- | --- | --- | --- |
+| rootful | iPad Air A1476 / iPad4,3 / A7, Amethyst | iOS 12.2 | `iphoneos-arm` (arm64 binary) | «Сохранённое» launcher, independent library |
+| rootless | iPad7,5 / A10, Dopamine | iPadOS 16.0 | `iphoneos-arm64` | Existing uYou «Сохранённое» tab |
+
+The same Objective-C download/library/SponsorBlock sources serve both profiles.
+There are two DEBs because rootful and rootless install paths and loader paths
+differ. The closed-source upstream uYou 3.0.4 binary requires iOS 13.0; it is
+included only in the rootless profile. Its load-command minimum is never falsified.
+The rootful profile builds our own library without this binary or its hooks.
+
+## Build
+
+Requires macOS, full Xcode, Python 3.10+, Git, `ldid`, and `dpkg-deb`:
+
+```sh
+brew install ldid dpkg
+make -C ports/uyouenhanced test
+make uyouenhanced
+```
+
+One command fetches pinned source and Theos, builds both profiles, signs them,
+packages them, and verifies each DEB. Outputs are in `ports/uyouenhanced/dist/`.
+Build only one profile with `make -C ports/uyouenhanced rootful` or `rootless`.
+The GitHub Actions workflow builds the same pair and uploads artifacts; it does
+not silently update dependencies or install anything on a device.
+
+`config.json` records versions, the upstream commit, Theos commit and the SHA-256
+of upstream uYou. Temporary checkouts, objects and packages stay outside Git.
+The local12 entry-point change is retained as a small upstream patch; shared
+sources are in `sources/`, not in a temporary build directory.
+
+## Features
+
+- Russian «Сохранённое» library with high-resolution 16:9 covers, duration,
+  full-width search, YouTube-style filters, white menus, sorting, download
+  progress and error-only badges, pause/resume, retry, deletion and offline playback.
+  The saved tab is placed immediately before the account tab; Shorts and Create
+  are removed from the pivot model.
+- Shorts shelves and Shorts cards are filtered from feeds, including subscriptions;
+  ordinary videos are not filtered merely for having “Shorts” in their title.
+- Hold a video thumbnail for half a second to preview it with sound, for up to
+  15 seconds. Releasing the finger, scrolling, reusing the card or leaving the app
+  stops playback. Saved files are used locally; online previews select AVC/AAC up
+  to 480p. Active live broadcasts and unavailable streams are left as thumbnails. Native collection
+  and table cards are supported through their video renderer; device validation of
+  individual YouTube layouts is still required.
+- Menu downloads select the menu's own video ID, never a different playing video.
+
+- The player's download control uses a down-arrow/tray icon and joins YouTube's
+  native top controls between captions and settings when both are present. It
+  downloads the current video through the same quality menu, independently of
+  uYou's old button. The extra rotate/repeat/download row is disabled and detached;
+  its actions cannot run, and uYou repeat stays off. Upstream repeat-related patches
+  are removed from our compiled sources. The proprietary rootless uYou binary is
+  still bundled for its existing tab/integration; its internal bytes are not removed.
+- MP4 downloads combine AVC video and AAC audio; HLS uses
+  `AVAssetDownloadURLSession`. Signed media URLs are not saved in the library index.
+  Before starting, downloads check space for the two tracks plus the merged file;
+  preparation checks remaining space again. Expected media lengths are verified
+  before merging. Preparation starts in the foreground, prevents automatic screen locking while
+  merging, and keeps inputs for retry if iOS suspends the app. Existing generic
+  preparation failures are rechecked once; detailed AVFoundation codes are retained.
+- Home uses the standard YouTube interface, search and thumbnails. No custom
+  charts, header overlay or logo hiding is applied. Watch-history preferences are unchanged.
+- SponsorBlock automatically skips **sponsor** segments in YouTube's local player
+  and saved videos. Other categories are left alone. The gear button in the library
+  turns skipping on/off. SponsorBlock does not control a remote Cast player.
+- Segment metadata is cached alongside the library, refreshed after 24 hours when
+  possible, and usable offline. No-segments 404 and failed API calls leave playback
+  available; failures do not replace a successful cache. Newly downloaded videos
+  prefetch metadata. Fetches cannot affect a different video's player.
+- Sponsor intervals appear in green on the playback timeline. Markers follow
+  the track on resize/fullscreen, stay below the draggable dot and accept no touches.
+  Unknown/live durations and ads hide the markers. AVKit's saved-video time slider
+  is supported when that system version exposes its AVScrubber UISlider.
+- Return YouTube Dislike is compiled from the pinned upstream submodule and
+  restores estimated dislike counts in compatible YouTube UIs. Its existing
+  settings remain available. The library gear also toggles display. Vote submission
+  is off by upstream default; this port does not enable it.
+
+SponsorBlock uses the [official API](https://wiki.sponsor.ajay.app/w/API_Docs).
+Dislikes are estimates from [Return YouTube Dislike](https://returnyoutubedislike.com/),
+not private official YouTube statistics. Both are community data services.
+
+## Install and device validation
+
+These are **YouTube tweaks**, not standalone copies of the YouTube app. An existing
+compatible `com.google.ios.youtube` installation and an active jailbreak are
+required. No YouTube IPA, Apple account or app entitlement is included.
+
+For iOS 12, try downloading the last compatible YouTube version from the App Store
+purchase history associated with your Apple account. Availability depends on the
+store/account and Google's retained versions. An old app can also be rejected by
+YouTube's servers; lowering the tweak's deployment target cannot fix that.
+
+On the tested A1476, the store offered only the current app requiring iOS 17+.
+A local installation used the developer's archived
+[uYouPlus 16.42.3 / 2.1 release](https://github.com/qnblackcat/uYouPlus/releases/tag/v17.25.1-2.1).
+The native app genuinely targets iOS 12.0. `scripts/prepare_ios12_app.py` accepts
+only that pinned IPA SHA-256, removes the old embedded tweaks and the iOS 15 Safari
+extension, and adds explicit loads for this installed rootful package. It signs
+the native frameworks/app ad hoc for AppSync, preserves the bundle ID/data and
+does not lower any native OS requirement. The optional compact mode keeps
+Russian/English resources to reduce installation time:
+
+```sh
+python3 scripts/prepare_ios12_app.py .build/uYouPlus_16.42.3_2.1.ipa \
+  .build/YouTube-iOS12-local.ipa --compact-locales
+```
+
+Keep these proprietary input/output IPAs outside Git. The prepared app depends on
+the installed rootful DEB and active Amethyst/AppSync. Rootful now reports server
+client version 20.10.3 for older native clients: anonymous browse requests from
+16.42.3 and 19.49.7 returned HTTP 400, while 20.10.3 returned HTTP 200 on 2026-10-11.
+This does not imply support for every renderer or playback response.
+
+The rootful deployment minimum is 12.2: the installed SDK 27 maps CoreMedia C
+symbols to an unavailable `@rpath/libswiftCoreMedia.dylib` at a 12.0 deployment
+target. A real iOS 12 crash identified that dependency. At 12.2 these symbols bind
+to the native CoreMedia framework; package verification rejects unbundled relative
+runtime dependencies and requires the native provider.
+
+Install the rootful DEB on Amethyst and the rootless DEB on Dopamine using Sileo.
+Close YouTube fully and reopen it. After a full device reboot, reactivate the
+jailbreak before using the tweak. Existing `UYTOffline` media and its index are not
+deleted by installing/upgrading the package. The original local12 DEBs remain in
+the old ignored snapshot directory for rollback on the iPadOS 17 device.
+
+Verification covers actual builds, architecture, deployment load commands,
+signatures, Substrate paths, injection filters, archive checksums and selection/
+skipping/marker-range tests. On 2026-10-11, local13 launched on iPad7,5 with iPadOS
+17.7.11 and YouTube 21.40.5, retained eight library entries and played a saved video
+with sound (confirmed by the user). On the same device, the user confirmed local14's
+download icon between captions/settings, quality menu, green sponsor intervals and
+a real automatic skip. A new MP4 download completed with video and audio merged
+(device log `videoAndAudio=1`). On-screen dislike rendering was also confirmed by
+the user. Local15 was then installed on the same tablet; the user confirmed that
+the lower rotate/repeat/download row disappeared and the independent top download
+button still opened the quality menu. Runtime confirmed disabled legacy actions,
+repeat off, and the saved library mounting with 11 entries. Airplane-mode playback
+remains unverified; the first iOS 12 runtime results are recorded below.
+Local21 restores the standard YouTube home at the user's request; custom charts,
+header/search overlays and home logo hooks are removed. Saved navigation, downloads,
+SponsorBlock and dislike restoration remain. Both profiles build locally; device
+validation of the home restoration is pending. A reported long-video preparation
+failure has not yet been reproduced with its exact AVFoundation code.
+On the same iPad, local26 displayed previews for local files and online streams.
+The user confirmed sound, restoration of the cover after releasing the finger,
+and normal subscription loading speed with Shorts removed. Native Elements card
+identity can use the unique video ID in the card’s own official thumbnail URLs.
+Local27 also accepts completed live recordings with a finite duration; active
+broadcasts remain excluded. Both profiles and regression tests pass locally;
+the user also confirmed visible playback with sound for the finished-stream recording
+on local27. Clean CI passed for both profiles on code revision 943ec10.
+On iPad4,3 / iOS 12.5.8, local30 is installed with native YouTube 16.42.3.
+The corrected process remains running, and its cache-only runtime diagnostic
+confirms the native version, version class, `YTMainWindow`, mounted saved launcher
+and HTTP 200 / no error from a credential-free native HEAD request. Actual feed
+rendering, download/playback, SponsorBlock and dislike UI on this tablet still
+require device confirmation. The rootless tablet remains on verified local27;
+these additional hooks are compiled only into the rootful profile.
+No compatibility with an untested YouTube version is implied by a passing build.
+
+Sources/credit: arichornlover and qnblackcat (uYouEnhanced/uYouPlus), MiRO92 (uYou),
+PoomSmart and the pinned Return-YouTube-Dislikes contributors (RYD), and SponsorBlock
+contributors (segment data). Upstream licenses and attribution remain in the
+fetched repositories; the proprietary uYou archive is obtained from pinned
+upstream only, not copied into this Git repository.

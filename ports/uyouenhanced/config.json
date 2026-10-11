@@ -1,0 +1,12 @@
+{
+  "upstream": "https://github.com/arichornlover/uYouEnhanced.git",
+  "revision": "2b6816069c2156eef626084cf7fe645749a2b152",
+  "theos": "https://github.com/theos/theos.git",
+  "theos_revision": "304e0799973e8145f32e4ca2de6c747a84b758ce",
+  "version": "21.14.4-3.0.5+local30",
+  "base_sha256": "76318ef3db98df667252e099f933b6ddc261bc231e0bd4f3629607cf5c8cdb67",
+  "profiles": {
+    "rootful": {"minimum_ios": "12.2", "architecture": "iphoneos-arm", "prefix": "", "bundled_uyou": false},
+    "rootless": {"minimum_ios": "16.0", "architecture": "iphoneos-arm64", "prefix": "/var/jb", "bundled_uyou": true}
+  }
+}

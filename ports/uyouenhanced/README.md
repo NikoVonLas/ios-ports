@@ -97,7 +97,11 @@ with sound (confirmed by the user). On the same device, the user confirmed local
 download icon between captions/settings, quality menu, green sponsor intervals and
 a real automatic skip. A new MP4 download completed with video and audio merged
 (device log `videoAndAudio=1`). On-screen dislike rendering was also confirmed by
-the user. Airplane-mode playback and the old iOS 12 device remain unverified.
+the user. Local15 was then installed on the same tablet; the user confirmed that
+the lower rotate/repeat/download row disappeared and the independent top download
+button still opened the quality menu. Runtime confirmed disabled legacy actions,
+repeat off, and the saved library mounting with 11 entries. Airplane-mode playback
+and the old iOS 12 device remain unverified.
 No compatibility with an untested YouTube version is implied by a passing build.
 
 Sources/credit: arichornlover and qnblackcat (uYouEnhanced/uYouPlus), MiRO92 (uYou),

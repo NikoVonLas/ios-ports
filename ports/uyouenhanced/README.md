@@ -133,7 +133,9 @@ identity. Local23 binds generic Elements controllers and their inner card views;
 Shorts checks scan/cache raw component data instead of repeated protobuf descriptions.
 Shorts performance still needs device validation. Local23 still lacked a video
 identity on YTVideoWithContextNode; local24 follows that node’s scoped card responder
-and inline renderer. Its playback behavior remains pending device validation.
+and inline renderer. Local24/25 still had no identity on that node. Local26 also extracts a unique
+video ID from official thumbnail URLs inside the card’s raw Elements data; binary
+payloads and mixed-video rejection are tested. Actual playback remains unverified.
 No compatibility with an untested YouTube version is implied by a passing build.
 
 Sources/credit: arichornlover and qnblackcat (uYouEnhanced/uYouPlus), MiRO92 (uYou),

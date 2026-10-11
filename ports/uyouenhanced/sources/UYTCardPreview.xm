@@ -19,6 +19,10 @@ static id UYTPObjectIvar(id object,const char *name) {
     return type && type[0]=='@'?object_getIvar(object,ivar):nil;
 }
 static NSString *UYTPNodeID(id node) {
+    for (NSString *key in @[@"URL",@"url",@"imageURL",@"_URL",@"_url"]) {
+        id url=UYTPRead(node,key); NSString *text=[url isKindOfClass:NSURL.class]?[url absoluteString]:[url isKindOfClass:NSString.class]?url:nil;
+        NSString *identifier=UYTVideoIDFromThumbnailData([text dataUsingEncoding:NSUTF8StringEncoding]); if (identifier) return identifier;
+    }
     // Modern feed nodes keep the InnerTube card controller as their responder,
     // while their ELM controller only exposes a C++ materialization instance.
     id responder=UYTPRead(node,@"parentResponder");
@@ -80,6 +84,8 @@ static NSString *UYTPCardID(UIView *cell,CGPoint point) {
         NSLog(@"[UYTNative] Preview node fields=%@",UYTPFields(root));
         NSLog(@"[UYTNative] Preview context fields=%@",UYTPFields(UYTPObjectIvar(root,"_context")));
         NSLog(@"[UYTNative] Preview responder fields=%@",UYTPFields(UYTPRead(root,@"parentResponder")));
+        id entry=UYTPRead(UYTPRead(root,@"parentResponder"),@"_entry");
+        NSLog(@"[UYTNative] Preview entry class=%@ data-bytes=%lu",NSStringFromClass([entry class]),(unsigned long)[UYTPRead(entry,@"elementData") length]);
         NSLog(@"[UYTNative] Preview element fields=%@",UYTPFields(UYTPRead(root,@"element")));
         NSLog(@"[UYTNative] Preview controller fields=%@",UYTPFields(UYTPRead(root,@"controller")));
     }

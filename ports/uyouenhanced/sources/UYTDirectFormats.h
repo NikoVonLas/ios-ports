@@ -5,3 +5,4 @@ FOUNDATION_EXPORT NSDictionary *UYTDirectFormats(NSDictionary *response, NSStrin
 
 FOUNDATION_EXPORT NSMutableURLRequest *UYTPlayerRequest(NSString *videoID);
 FOUNDATION_EXPORT NSDictionary *UYTPreviewFormat(NSDictionary *response, NSString *videoID);
+FOUNDATION_EXPORT NSString *UYTVideoIDFromThumbnailData(NSData *data);

@@ -48,7 +48,10 @@ static void UYTMCollect(id obj, NSString *field, NSMutableSet *ids, NSHashTable 
 static NSSet *UYTMIDs(id object) { NSMutableSet *ids=[NSMutableSet set]; NSInteger budget=500; UYTMCollect(object,@"",ids,[NSHashTable hashTableWithOptions:NSPointerFunctionsObjectPointerPersonality],0,&budget); return ids; }
 NSString *UYTVideoIDForCard(id object) {
     NSSet *ids=UYTMIDs(object); if (ids.count==1) return ids.anyObject;
-    if (ids.count || ![object respondsToSelector:NSSelectorFromString(@"descriptor")]) return nil;
+    if (ids.count) return nil;
+    NSString *thumbnailID=UYTVideoIDFromThumbnailData(UYTMRead(object,@"elementData"));
+    if (thumbnailID) return thumbnailID;
+    if (![object respondsToSelector:NSSelectorFromString(@"descriptor")]) return nil;
     NSString *text=[object description]; if (text.length>256*1024) return nil;
     NSRegularExpression *regex=[NSRegularExpression regularExpressionWithPattern:@"(?:video_id|videoId|videoID)\\s*:\\s*\"([A-Za-z0-9_-]{11})\"" options:0 error:nil];
     NSMutableSet *matches=[NSMutableSet set];
@@ -214,5 +217,5 @@ static void UYTMEndpoint(id command,id entry) {
 
 %ctor {
     %init;
-    NSLog(@"[UYTNative] local25 loaded offline-command-hook=1 media-client=android");
+    NSLog(@"[UYTNative] local26 loaded offline-command-hook=1 media-client=android");
 }

@@ -50,6 +50,16 @@ NSMutableURLRequest *UYTPlayerRequest(NSString *videoID) {
     request.HTTPBody=[NSJSONSerialization dataWithJSONObject:body options:0 error:nil]; [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
     [request setValue:@"com.google.android.youtube/21.08.266 (Linux; U; Android 11) gzip" forHTTPHeaderField:@"User-Agent"]; return request;
 }
+NSString *UYTVideoIDFromThumbnailData(NSData *data) {
+    if (![data isKindOfClass:NSData.class] || !data.length || data.length>2*1024*1024) return nil;
+    // Latin-1 preserves ASCII URLs even when protobuf bytes are not valid UTF-8.
+    NSString *text=[[NSString alloc] initWithData:data encoding:NSISOLatin1StringEncoding];
+    static NSRegularExpression *regex; static dispatch_once_t once;
+    dispatch_once(&once,^{ regex=[NSRegularExpression regularExpressionWithPattern:@"https?://(?:i[0-9]?\\.ytimg\\.com|img\\.youtube\\.com)/(?:vi|vi_webp)/([A-Za-z0-9_-]{11})/" options:0 error:nil]; });
+    NSMutableSet *ids=[NSMutableSet set];
+    for (NSTextCheckingResult *match in [regex matchesInString:text options:0 range:NSMakeRange(0,text.length)]) [ids addObject:[text substringWithRange:[match rangeAtIndex:1]]];
+    return ids.count==1?ids.anyObject:nil;
+}
 NSDictionary *UYTPreviewFormat(NSDictionary *response,NSString *videoID) {
     if (![response isKindOfClass:NSDictionary.class] || !UYTValidVideoID(videoID)) return nil;
     NSDictionary *details=response[@"videoDetails"],*status=response[@"playabilityStatus"],*streaming=response[@"streamingData"];

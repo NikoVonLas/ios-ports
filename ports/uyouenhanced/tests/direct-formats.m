@@ -27,5 +27,11 @@ int main(void) { @autoreleasepool {
     NSMutableDictionary *live=[withMuxed mutableCopy]; live[@"videoDetails"]=@{@"videoId":vid,@"isLiveContent":@YES};
     NSCAssert(!UYTPreviewFormat(live,vid),@"No bounded preview for live broadcast");
     NSCAssert(!UYTPlayerRequest(@"../bad"),@"Invalid IDs cannot initiate requests");
+    NSMutableData *thumbnail=[NSMutableData dataWithBytes:"\xff\0" length:2];
+    [thumbnail appendData:[@"https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg https://i9.ytimg.com/vi_webp/jNQXAC9IVRw/mqdefault.webp?x=1" dataUsingEncoding:NSUTF8StringEncoding]];
+    NSCAssert([UYTVideoIDFromThumbnailData(thumbnail) isEqual:@"jNQXAC9IVRw"],@"Repeated card thumbnail ID survives binary protobuf");
+    [thumbnail appendData:[@" https://i.ytimg.com/vi/M7lc1UVf-VE/hqdefault.jpg" dataUsingEncoding:NSUTF8StringEncoding]];
+    NSCAssert(!UYTVideoIDFromThumbnailData(thumbnail),@"Mixed-video container must not choose an arbitrary preview");
+    NSCAssert(!UYTVideoIDFromThumbnailData([@"https://example.invalid/vi/jNQXAC9IVRw/hqdefault.jpg https://yt3.ggpht.com/avatar" dataUsingEncoding:NSUTF8StringEncoding]),@"Only video-cover hosts/paths supply identity");
     puts("PASS: selected video identity, audio required, A10 codec compatibility, malformed response and ID validation");
 } return 0; }

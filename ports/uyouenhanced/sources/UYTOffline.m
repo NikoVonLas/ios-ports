@@ -167,7 +167,6 @@ static void UYTPresentLibrary(UIViewController *presenter) {
 #import "UYTSponsorTimeline.h"
 #include "UYTOfflinePlayer.inc"
 #include "UYTLibraryUI.inc"
-#include "UYTPopularUI.inc"
 #include "UYTMenuRequest.inc"
 
 BOOL UYTOfferOffline(NSURL *url, NSString *videoID, NSString *title, UIViewController *presenter) {

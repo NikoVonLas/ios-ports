@@ -18,6 +18,11 @@ def main():
     subprocess.run(['git', 'checkout-index', '-a', '-f'], cwd=source, check=True)
     subprocess.run(['git', 'apply', '--ignore-space-change', '--unidiff-zero', str(PORT / 'patches/local12-main.patch')], cwd=source, check=True)
     subprocess.run(['git', 'apply', '--ignore-space-change', str(PORT / 'patches/remove-player-repeat.patch')], cwd=source, check=True)
+    # Remove obsolete port files in this disposable checkout before wildcard builds.
+    own_names = {path.name for path in (PORT / 'sources').iterdir()}
+    for installed in (source / 'Sources').glob('UYT*'):
+        if installed.is_file() and installed.name not in own_names:
+            installed.unlink()
     for path in (PORT / 'sources').iterdir():
         shutil.copy2(path, source / 'Sources' / path.name)
     shutil.copy2(PORT / 'scripts/Tweak.mk', source / 'Makefile')

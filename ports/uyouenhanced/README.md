@@ -60,11 +60,8 @@ sources are in `sources/`, not in a temporary build directory.
   before merging. Preparation starts in the foreground, prevents automatic screen locking while
   merging, and keeps inputs for retry if iOS suspends the app. Existing generic
   preparation failures are rechecked once; detailed AVFoundation codes are retained.
-- Home displays public global music-video/song charts and a public gaming feed
-  below the native search row. The native row is located across the outer header as well as the browse view; the
-  YouTube title logo is hidden. Public feeds use an ephemeral session without
-  account cookies or credentials and do not enable watch history. Pull down to
-  refresh. YouTube can change the public page schema or restrict a chart by region.
+- Home uses the standard YouTube interface, search and thumbnails. No custom
+  charts, header overlay or logo hiding is applied. Watch-history preferences are unchanged.
 - SponsorBlock automatically skips **sponsor** segments in YouTube's local player
   and saved videos. Other categories are left alone. The gear button in the library
   turns skipping on/off. SponsorBlock does not control a remote Cast player.
@@ -84,13 +81,6 @@ sources are in `sources/`, not in a temporary build directory.
 SponsorBlock uses the [official API](https://wiki.sponsor.ajay.app/w/API_Docs).
 Dislikes are estimates from [Return YouTube Dislike](https://returnyoutubedislike.com/),
 not private official YouTube statistics. Both are community data services.
-
-Public music sources are the official [Top music videos](https://www.youtube.com/playlist?list=PL4fGSI1pDJn5kI81J1fYWK5eZRl1zJ5kM)
-and [Top songs](https://www.youtube.com/playlist?list=PL4fGSI1pDJn6puJdseH2Rt9sMvt9E2M4i)
-playlists linked from [YouTube Music](https://www.youtube.com/feed/music); gaming
-uses the public [Gaming](https://www.youtube.com/gaming) page. The safe JSON parser
-supports current lockup view models and legacy renderers without evaluating page
-scripts or collecting Shorts/menu/tracking payloads.
 
 ## Install and device validation
 
@@ -122,15 +112,11 @@ the lower rotate/repeat/download row disappeared and the independent top downloa
 button still opened the quality menu. Runtime confirmed disabled legacy actions,
 repeat off, and the saved library mounting with 11 entries. Airplane-mode playback
 and the old iOS 12 device remain unverified.
-Local16 loaded on the same tablet. Local18 builds and package checks pass for
-both profiles. Local19–20 add outline/filled Saved icons for both native pivot views and
-Elements tabs, and isolated
-thumbnail requests with runtime diagnostics. Local19 runtime confirms 1280 px
-thumbnail downloads and the home feed positioned below the search row; the
-visual result and icon state still require device confirmation. Preparation recovery
-are awaiting device validation. The public parser was also run against actual
-YouTube pages (81 available music videos and 5 gaming videos). A reported long
-video failure has not yet been reproduced with its exact AVFoundation code.
+Local21 restores the standard YouTube home at the user's request; custom charts,
+header/search overlays and home logo hooks are removed. Saved navigation, downloads,
+SponsorBlock and dislike restoration remain. Both profiles build locally; device
+validation of the home restoration is pending. A reported long-video preparation
+failure has not yet been reproduced with its exact AVFoundation code.
 No compatibility with an untested YouTube version is implied by a passing build.
 
 Sources/credit: arichornlover and qnblackcat (uYouEnhanced/uYouPlus), MiRO92 (uYou),

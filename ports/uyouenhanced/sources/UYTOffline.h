@@ -6,7 +6,5 @@ FOUNDATION_EXPORT void UYTDownloadFromMenu(NSString *videoID, UIViewController *
 FOUNDATION_EXPORT BOOL UYTHandleDownloadSheet(id controller, id command, id context);
 
 FOUNDATION_EXPORT void UYTOpenLibrary(UIViewController *presenter);
-FOUNDATION_EXPORT UIViewController *UYTMakePopularController(void);
-FOUNDATION_EXPORT void UYTOpenPopularVideo(NSString *videoID, UIViewController *controller);
 
 void UYTUpdateSavedTabsInView(UIView *view);

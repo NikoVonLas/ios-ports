@@ -33,7 +33,7 @@ Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/nodejs
 
 Package: com.nikovonlas.github-cli-ios
 Name: GitHub CLI for iPadOS
-Version: 2.102.1-1
+Version: 2.103.0-1
 Architecture: iphoneos-arm64
 Maintainer: NikoVonLas
 Author: GitHub (upstream), NikoVonLas (iPadOS port)
@@ -44,8 +44,8 @@ Conflicts: gh, github-cli
 Provides: gh, github-cli
 Replaces: gh, github-cli
 Tag: purpose::console, role::developer
-Filename: debs/github-cli-ios_2.102.1-1_iphoneos-arm64.deb
-Size: 9835916
-SHA256: 6e916c2a6ef1b4c12ad10e1e91fc9b1d1a0f95b7ddaf16322e9fca74f6de36a6
+Filename: debs/github-cli-ios_2.103.0-1_iphoneos-arm64.deb
+Size: 9647792
+SHA256: 43aad7f15e49866a067c74f10532a37158caf1e0eb78a4550b6401c8e2e81f8f
 Description: Native rootless iPadOS port of the official GitHub CLI
 Homepage: https://github.com/NikoVonLas/ios-ports/tree/main/ports/github-cli
